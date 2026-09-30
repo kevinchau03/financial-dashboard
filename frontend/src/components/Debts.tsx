@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { amount, saveRecord, today } from './api'
+import { amount, saveRecord, today } from '../api'
 import Modal from './Modal'
 
 type Debt = {
@@ -62,7 +62,6 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const pending = useRef(false)
   const paidOff = Number(debt.remaining_amount) === 0
   async function pay(event: FormEvent<HTMLFormElement>) {
@@ -73,12 +72,10 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
     pending.current = true
     setSaving(true)
     setError('')
-    setNotice('')
     try {
       const updated = await saveRecord<Debt>(`/api/debts/${debt.id}/payments`, 'POST', { amount: data.get('amount'), paid_on: data.get('paid_on') })
       form.reset()
       onSave(updated)
-      setNotice(`Payment recorded. ${amount(updated.remaining_amount)} remaining.`)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Unable to record payment.')
     } finally { pending.current = false; setSaving(false) }
@@ -96,7 +93,7 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
     {debt.payments.length > 0 && <details><summary>Payment history ({debt.payments.length})</summary><ul className="payment-history">
       {debt.payments.map(payment => <li key={payment.id}><strong>{amount(payment.amount)}</strong> paid on <time dateTime={payment.paid_on}>{payment.paid_on}</time></li>)}
     </ul></details>}
-    {editing ? <DebtForm debt={debt} onCancel={() => setEditing(false)} onSave={updated => { onSave(updated); setEditing(false); setNotice('Debt updated.'); }} /> : <>
+    {editing ? <DebtForm debt={debt} onCancel={() => setEditing(false)} onSave={updated => { onSave(updated); setEditing(false); }} /> : <>
       {!paidOff && <form className="contribution-form" onSubmit={pay} aria-label={`Record payment for ${debt.name}`}>
         <fieldset disabled={saving}>
           <label>Payment amount<input name="amount" type="number" min="0.01" max={debt.remaining_amount} step="0.01" required placeholder="0.00" /></label>
@@ -106,9 +103,8 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
         </fieldset>
         {error && <p role="alert">{error}</p>}
       </form>}
-      <button className="secondary" type="button" disabled={saving} onClick={() => { setEditing(true); setNotice(''); }}>Edit debt</button>
+      <button className="secondary" type="button" disabled={saving} onClick={() => setEditing(true)}>Edit debt</button>
     </>}
-    <p role="status">{notice}</p>
   </article>
 }
 
@@ -135,7 +131,7 @@ export default function Debts() {
     return () => controller.abort()
   }, [])
   return <div className="dashboard-column">
-    <div className="list-heading"><div><h2 className="column-heading">Debts</h2><p>A little closer to debt-free.</p></div>
+    <div className="list-heading"><div><h2 className="column-heading">Debts</h2><p>Slowly chip away at your debt.</p></div>
       <button type="button" disabled={loading} onClick={() => setCreating(true)}>Add debt</button></div>
     {creating && <Modal title="Add a debt" busy={saving} onClose={() => setCreating(false)}>
       <DebtForm onSavingChange={setSaving} onSave={saved => { setDebts(previous => [saved, ...previous]); setNotice(`Added ${saved.name}.`); setCreating(false); }} />
@@ -150,3 +146,4 @@ export default function Debts() {
     </section>
   </div>
 }
+
