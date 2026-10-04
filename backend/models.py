@@ -1,10 +1,31 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from sqlalchemy import Date, Numeric, String, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
+
+
+class StatementImport(Base):
+    __tablename__ = "statement_imports"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    filename: Mapped[str] = mapped_column(Text)
+    content_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    imported_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    statement_id: Mapped[int] = mapped_column(ForeignKey("statement_imports.id"), index=True)
+    date: Mapped[date] = mapped_column(Date)
+    description: Mapped[str] = mapped_column(Text)
+    debit_cents: Mapped[int | None] = mapped_column(nullable=True)
+    credit_cents: Mapped[int | None] = mapped_column(nullable=True)
+    balance_cents: Mapped[int]
 
 
 class FinancialGoal(Base):

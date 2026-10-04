@@ -18,4 +18,17 @@ export type Bill = {
   payments: { id: number; amount: string; paid_on: string; due_date: string | null }[]
 }
 
+export type Debt = {
+  id: number
+  name: string
+  amount: string
+  current_amount: string
+  remaining_amount: string
+  interest_rate: string | null
+  due_date: string | null
+  description: string | null
+  is_paid: boolean
+  payments: { id: number; amount: string; paid_on: string; due_date: string | null }[]
+}
+
 

@@ -1,6 +1,9 @@
+import Notice from './Notice'
+import useNotice from '../hooks/useNotice'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import Modal from './Modal'
+import BillItem from './BillItem'
 import EditForm from './EditForm'
 import { amount, today, saveRecord } from '../api'
 import type { Bill } from '../types'
@@ -33,7 +36,7 @@ function PaymentForm({ bill, onSave, onCancel }: { bill: Bill; onSave: (bill: Bi
   </form>
 }
 
-export default function Bills() {
+export default function Bills({ onChange }: { onChange: () => void }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const [paying, setPaying] = useState<number | null>(null)
@@ -42,7 +45,7 @@ export default function Bills() {
   const [loadError, setLoadError] = useState('')
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useNotice()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -90,6 +93,7 @@ export default function Bills() {
       }
       const bill: Bill = await response.json()
       setBills(previous => [bill, ...previous])
+      onChange()
       form.reset()
       setNotice(`Created ${bill.name}.`)
       setCreating(false)
@@ -127,7 +131,7 @@ export default function Bills() {
           {saveError && <p role="alert">{saveError}</p>}
         </form>
       </Modal>}
-      <p role="status">{notice}</p>
+      <Notice message={notice} />
       <section aria-labelledby="bills-heading" aria-busy={loading}>
         <h3 id="bills-heading">Your bills</h3>
         {loading && <p>Loading bills…</p>}
@@ -135,37 +139,33 @@ export default function Bills() {
         {!loading && !loadError && bills.length === 0 && <p>No bills yet. Use “Add bill” to set up a reminder.</p>}
         <div className="bills">
           {[...bills].sort((a, b) => Number(a.is_paid) - Number(b.is_paid) || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999')).map(bill => (
-            <article key={bill.id}>
-              <div className="bill-title"><h4>{bill.name}</h4><strong>{amount(bill.amount)}</strong></div>
-              <p className="bill-meta">{bill.recurring ? 'Recurring' : 'One-time'} · {bill.due_date ? <>Due <time dateTime={bill.due_date}>{bill.due_date}</time></> : 'No due date'}</p>
-              <p><span className={`status ${bill.is_paid ? 'paid' : bill.due_date && bill.due_date < today() ? 'overdue' : ''}`}>
-                {bill.is_paid ? 'Paid' : bill.due_date && bill.due_date < today() ? 'Overdue' : 'Unpaid'}
-              </span></p>
-              <details className="bill-details"><summary>Details & payment history</summary>
+            <BillItem key={bill.id} bill={bill} active={editing === bill.id || paying === bill.id}>
               {bill.description && <p className="description">{bill.description}</p>}
               <p>{bill.payments.length ? `Last payment: ${amount(bill.payments[0].amount)} on ${bill.payments[0].paid_on}` : 'No payments recorded yet.'}</p>
               {bill.payments.length > 0 && <details><summary>Payment history ({bill.payments.length})</summary><ul className="payment-history">
                 {bill.payments.map(payment => <li key={payment.id}><strong>{amount(payment.amount)}</strong> paid on <time dateTime={payment.paid_on}>{payment.paid_on}</time>{payment.due_date && <> · for bill due {payment.due_date}</>}</li>)}
               </ul></details>}
-              </details>
               {editing === bill.id ? <EditForm item={bill} kind="bills" onCancel={() => setEditing(null)} onSave={updated => {
                 setBills(previous => previous.map(item => item.id === updated.id ? updated as Bill : item))
+                onChange()
                 setEditing(null)
                 setNotice(`Updated ${updated.name}.`)
               }} /> : paying === bill.id ? <PaymentForm bill={bill} onCancel={() => setPaying(null)} onSave={updated => {
                 setBills(previous => previous.map(item => item.id === updated.id ? updated : item))
+                onChange()
                 setPaying(null)
                 setNotice(`Payment recorded for ${updated.name}.`)
               }} /> : <div className="actions">
                 <button className="secondary" type="button" disabled={editing !== null || paying !== null} onClick={() => setEditing(bill.id)}>Edit bill</button>
                 {!bill.is_paid && <button type="button" disabled={editing !== null || paying !== null} onClick={() => setPaying(bill.id)}>Record payment</button>}
               </div>}
-            </article>
+            </BillItem>
           ))}
         </div>
       </section>
     </aside>
   )
 }
+
 
 

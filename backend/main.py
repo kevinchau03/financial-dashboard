@@ -1,11 +1,16 @@
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, Form
+from typing import Literal
+from analytics import read_td_csv, get_total_income, get_total_spent, get_time_range
+from statements import save_statement
+import csv
 from sqlalchemy import select, inspect, text, update, func
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_session
+from analytics import get_total_savings, get_total_goal_contributions, get_total_debt, get_total_bills, read_csv
 from models import Bills, FinancialGoal, BillPayment, Debts, DebtPayment
 from schemas import BillCreate, BillRead, GoalCreate, GoalRead, GoalUpdate, GoalContribution, PaymentCreate, DebtCreate, DebtRead, DebtUpdate, DebtPaymentCreate
 from decimal import Decimal
@@ -24,6 +29,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Analytic endpoints
+@app.get("/api/analytics/savings", response_model=dict[str, Decimal])
+def total_savings(session: Annotated[Session, Depends(get_session)]):
+    return {"total_savings": get_total_savings(session)}
+
+@app.get("/api/analytics/goals/contributions", response_model=dict[str, Decimal])
+def total_goal_contributions(session: Annotated[Session, Depends(get_session)]):
+    return {"total_goal_contributions": get_total_goal_contributions(session)}
+
+@app.get("/api/analytics/debts", response_model=dict[str, Decimal])
+def total_debts(session: Annotated[Session, Depends(get_session)]):
+    return {"total_debt": get_total_debt(session)}
+
+@app.get("/api/analytics/bills", response_model=dict[str, Decimal])
+def total_bills(session: Annotated[Session, Depends(get_session)]):
+    return {"total_bills": get_total_bills(session)}
+
+
+# Endpoints for managing financial goals, bills, and debts    
 
 @app.get("/api/goals", response_model=list[GoalRead])
 def list_goals(session: Annotated[Session, Depends(get_session)]):
@@ -161,6 +185,33 @@ def record_debt_payment(debt_id: int, payment: DebtPaymentCreate, session: Annot
     session.refresh(debt)
     return debt
 
+# CSV upload endpoint
+@app.post("/api/upload_csv")
+async def upload_csv(file: UploadFile, session: Annotated[Session, Depends(get_session)], format: Annotated[Literal['csv', 'td'], Form()] = 'csv'):
+    try:
+        if not file.filename or not file.filename.lower().endswith('.csv'):
+            raise HTTPException(400, 'Please upload a CSV file.')
+        contents = await file.read(5 * 1024 * 1024 + 1)
+        if len(contents) > 5 * 1024 * 1024:
+            raise HTTPException(413, 'CSV files must be no larger than 5 MB.')
+        try:
+            data = read_td_csv(contents) if format == 'td' else read_csv(contents)
+        except UnicodeDecodeError:
+            raise HTTPException(400, 'Please save your CSV with UTF-8 encoding.')
+        except (csv.Error, ValueError) as error:
+            raise HTTPException(400, str(error))
+        saved = save_statement(session, file.filename, contents, data['rows']) if format == 'td' else {}
+        if format == 'td':
+            start_date, end_date = get_time_range(session)
+            saved['stats'] = {
+                'total_income': str(get_total_income(session)),
+                'total_spent': str(get_total_spent(session)),
+                'start_date': start_date,
+                'end_date': end_date,
+            }
+        return {'filename': file.filename, **data, 'row_count': len(data['rows']), **saved}
+    finally:
+        await file.close()
 
 @app.get("/")
 def read_root():

@@ -1,22 +1,16 @@
+import Notice from './Notice'
+import useNotice from '../hooks/useNotice'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { amount, saveRecord, today } from '../api'
 import Modal from './Modal'
+import CollapsibleItem from './CollapsibleItem'
+import type { Debt as DebtType } from '../types'
 
-type Debt = {
-  id: number
-  name: string
-  amount: string
-  current_amount: string
-  remaining_amount: string
-  due_date: string | null
-  interest_rate: string | null
-  description: string | null
-  payments: { id: number; amount: string; paid_on: string; due_date: string | null }[]
-}
+  
 
 function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
-  debt?: Debt; onSave: (debt: Debt) => void; onCancel?: () => void; onSavingChange?: (saving: boolean) => void
+  debt?: DebtType; onSave: (debt: DebtType) => void; onCancel?: () => void; onSavingChange?: (saving: boolean) => void
 }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -31,7 +25,7 @@ function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
     onSavingChange?.(true)
     setError('')
     try {
-      const saved = await saveRecord<Debt>(debt ? `/api/debts/${debt.id}` : '/api/debts', debt ? 'PUT' : 'POST', {
+      const saved = await saveRecord<DebtType>(debt ? `/api/debts/${debt.id}` : '/api/debts', debt ? 'PUT' : 'POST', {
         name: String(data.get('name')).trim(), amount: data.get('amount'),
         due_date: data.get('due_date') || null,
         interest_rate: data.get('interest_rate') || null,
@@ -58,7 +52,7 @@ function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
   </form>
 }
 
-function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }) {
+function DebtCard({ debt, onSave }: { debt: DebtType; onSave: (debt: DebtType) => void }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -73,7 +67,7 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
     setSaving(true)
     setError('')
     try {
-      const updated = await saveRecord<Debt>(`/api/debts/${debt.id}/payments`, 'POST', { amount: data.get('amount'), paid_on: data.get('paid_on') })
+      const updated = await saveRecord<DebtType>(`/api/debts/${debt.id}/payments`, 'POST', { amount: data.get('amount'), paid_on: data.get('paid_on') })
       form.reset()
       onSave(updated)
     } catch (error) {
@@ -81,10 +75,9 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
     } finally { pending.current = false; setSaving(false) }
   }
   const lastPayment = debt.payments[0]
-  return <article>
-    <h4>{debt.name}</h4>
-    <p><strong>{amount(debt.remaining_amount)}</strong> remaining of {amount(debt.amount)}</p>
-    <progress aria-label={`${debt.name} repayment progress`} value={Number(debt.current_amount)} max={Number(debt.amount)} />
+  return <CollapsibleItem title={debt.name}
+    summary={<><strong>{amount(debt.remaining_amount)}</strong> remaining of {amount(debt.amount)}</>}
+    progress={Number(debt.current_amount)} target={Number(debt.amount)} progressLabel={`${debt.name} repayment progress`}>
     <p>{amount(debt.current_amount)} paid · {Math.round(Number(debt.current_amount) / Number(debt.amount) * 100)}% repaid</p>
     {paidOff ? <p className="status paid">Paid off!</p> : debt.due_date && <p>Due <time dateTime={debt.due_date}>{debt.due_date}</time>{debt.due_date < today() && <span className="status overdue">Overdue</span>}</p>}
     {debt.interest_rate !== null && <p>Interest rate: {debt.interest_rate}% (reference only)</p>}
@@ -105,23 +98,23 @@ function DebtCard({ debt, onSave }: { debt: Debt; onSave: (debt: Debt) => void }
       </form>}
       <button className="secondary" type="button" disabled={saving} onClick={() => setEditing(true)}>Edit debt</button>
     </>}
-  </article>
+  </CollapsibleItem>
 }
 
-export default function Debts() {
+export default function Debts({ onChange }: { onChange: () => void }) {
   const [creating, setCreating] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [debts, setDebts] = useState<Debt[]>([])
+  const [debts, setDebts] = useState<DebtType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useNotice()
   useEffect(() => {
     const controller = new AbortController()
     async function load() {
       try {
         const response = await fetch('/api/debts', { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load debts. Check the backend and refresh the page.')
-        const saved: Debt[] = await response.json()
+        const saved: DebtType[] = await response.json()
         if (!controller.signal.aborted) setDebts(saved)
       } catch (error) {
         if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Unable to load debts.')
@@ -134,16 +127,18 @@ export default function Debts() {
     <div className="list-heading"><div><h2 className="column-heading">Debts</h2><p>Slowly chip away at your debt.</p></div>
       <button type="button" disabled={loading} onClick={() => setCreating(true)}>Add debt</button></div>
     {creating && <Modal title="Add a debt" busy={saving} onClose={() => setCreating(false)}>
-      <DebtForm onSavingChange={setSaving} onSave={saved => { setDebts(previous => [saved, ...previous]); setNotice(`Added ${saved.name}.`); setCreating(false); }} />
+      <DebtForm onSavingChange={setSaving} onSave={saved => { setDebts(previous => [saved, ...previous]); onChange(); setNotice(`Added ${saved.name}.`); setCreating(false); }} />
     </Modal>}
-    <p role="status">{notice}</p>
+    <Notice message={notice} />
     <section aria-labelledby="debts-heading" aria-busy={loading}>
       <h3 id="debts-heading">Your debts</h3>
       {loading && <p>Loading debts…</p>}
       {error && <p role="alert">{error}</p>}
       {!loading && !error && debts.length === 0 && <p>No debts yet. Use “Add debt” to track your repayments.</p>}
-      {debts.map(debt => <DebtCard key={debt.id} debt={debt} onSave={updated => setDebts(previous => previous.map(item => item.id === updated.id ? updated : item))} />)}
+      {debts.map(debt => <DebtCard key={debt.id} debt={debt} onSave={updated => { setDebts(previous => previous.map(item => item.id === updated.id ? updated : item)); onChange(); }} />)}
     </section>
   </div>
 }
+
+
 

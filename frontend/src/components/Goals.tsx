@@ -1,6 +1,9 @@
+import Notice from './Notice'
+import useNotice from '../hooks/useNotice'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import Modal from './Modal'
+import CollapsibleItem from './CollapsibleItem'
 import EditForm from './EditForm'
 import { amount, saveRecord } from '../api'
 import type { Goal } from '../types'
@@ -8,7 +11,7 @@ import type { Goal } from '../types'
 function AddAmountForm({ goal, onSave }: { goal: Goal; onSave: (goal: Goal) => void }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useNotice()
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -37,11 +40,11 @@ function AddAmountForm({ goal, onSave }: { goal: Goal; onSave: (goal: Goal) => v
       </div>
     </fieldset>
     {error && <p role="alert">{error}</p>}
-    <p role="status">{notice}</p>
+    <Notice message={notice} />
   </form>
 }
 
-export default function Goals() {
+export default function Goals({ onSavingsChange }: { onSavingsChange: () => void }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const [goals, setGoals] = useState<Goal[]>([])
@@ -49,7 +52,7 @@ export default function Goals() {
   const [loadError, setLoadError] = useState('')
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useNotice()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -97,6 +100,7 @@ export default function Goals() {
       }
       const goal: Goal = await response.json()
       setGoals(previous => [goal, ...previous])
+      onSavingsChange()
       form.reset()
       setNotice(`Created ${goal.name}.`)
       setCreating(false)
@@ -136,7 +140,7 @@ export default function Goals() {
           {saveError && <p role="alert">{saveError}</p>}
         </form>
       </Modal>}
-      <p role="status">{notice}</p>
+      <Notice message={notice} />
       <section aria-labelledby="goals-heading" aria-busy={loading}>
         <h3 id="goals-heading">Your goals</h3>
         {loading && <p>Loading goals…</p>}
@@ -144,10 +148,9 @@ export default function Goals() {
         {!loading && !loadError && goals.length === 0 && <p>No goals yet. Use “Add goal” to start saving for something.</p>}
         <div className="goals">
           {goals.map(goal => (
-            <article key={goal.id}>
-              <h4>{goal.name}</h4>
-              <p><strong>{amount(goal.current_amount)}</strong> saved of {amount(goal.target_amount)}</p>
-              <progress aria-label={`${goal.name} progress`} value={Math.min(Number(goal.current_amount), Number(goal.target_amount))} max={Number(goal.target_amount)} />
+            <CollapsibleItem key={goal.id} title={goal.name}
+              summary={<><strong>{amount(goal.current_amount)}</strong> saved of {amount(goal.target_amount)}</>}
+              progress={Number(goal.current_amount)} target={Number(goal.target_amount)} progressLabel={`${goal.name} progress`}>
               {goal.due_date && <p>Due <time dateTime={goal.due_date}>{goal.due_date}</time></p>}
               {goal.description && <p className="description">{goal.description}</p>}
               <p>{Math.round(Number(goal.current_amount) / Number(goal.target_amount) * 100)}% saved{Number(goal.current_amount) >= Number(goal.target_amount) ? ' · Goal reached!' : ` · ${amount(String(Number(goal.target_amount) - Number(goal.current_amount)))} to go`}</p>
@@ -156,14 +159,18 @@ export default function Goals() {
                 setEditing(null)
                 setNotice(`Updated ${updated.name}.`)
               }} /> : <>
-                <AddAmountForm goal={goal} onSave={updated => setGoals(previous => previous.map(item => item.id === updated.id ? updated : item))} />
+                <AddAmountForm goal={goal} onSave={updated => {
+                  setGoals(previous => previous.map(item => item.id === updated.id ? updated : item))
+                  onSavingsChange()
+                }} />
                 <button className="secondary" type="button" disabled={editing !== null} onClick={() => setEditing(goal.id)}>Edit goal</button>
               </>}
-            </article>
+            </CollapsibleItem>
           ))}
         </div>
       </section>
       </div>
   )
 }
+
 

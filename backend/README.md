@@ -28,6 +28,42 @@ amount. Decimal values are returned as strings. Interactive API docs: `/docs`.
 Run backend checks from `backend/` with `uv run pytest`.
 Run frontend checks from `frontend/` with `npm run build` and `npm run lint`.
 
+## Saved TD statements and SQL practice
+
+Restart the backend to create the new tables in `backend/goals.db`. Uploading
+through Your Budget Wrapped saves TD transactions and displays the parsed rows.
+Earlier uploads must be uploaded again to save them. Generic CSV previews
+(`format=csv`) are still not saved.
+
+- `statement_imports`: `id`, `filename`, `content_hash`, `imported_at`.
+- `transactions`: `id`, `statement_id`, `date`, `description`, `debit_cents`,
+  `credit_cents`, `balance_cents`. Dates use `YYYY-MM-DD`; blank debits/credits
+  are NULL. Amounts are integer cents (239 means $2.39).
+
+Each file is validated before saving, and its records commit together. An
+identical file, even renamed, is saved only once. Different files with overlapping
+transactions are not deduplicated. All records are shared; there are no user accounts.
+
+`get_total_spent(session)` in `analytics.py` runs this raw SQL and converts the
+result from cents to a Decimal dollar amount:
+
+```sql
+SELECT COALESCE(SUM(debit_cents), 0)
+FROM transactions;
+```
+
+It totals all saved debits, including transfers or fees listed as debits; credits
+are not subtracted. To call it from Python, run from the backend directory:
+
+```python
+from sqlalchemy.orm import Session
+from database import engine
+from analytics import get_total_spent
+
+with Session(engine) as session:
+    print(get_total_spent(session))
+```
+
 ## Editing and payments
 
 - `PUT /api/goals/{id}` edits name, target amount, due date, and description,
