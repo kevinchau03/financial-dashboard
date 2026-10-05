@@ -30,5 +30,3 @@ export type Debt = {
   is_paid: boolean
   payments: { id: number; amount: string; paid_on: string; due_date: string | null }[]
 }
-
-

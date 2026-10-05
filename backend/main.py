@@ -3,23 +3,31 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, Form
 from typing import Literal
-from analytics import read_td_csv, get_total_income, get_total_spent, get_time_range
+from analytics import get_total_income, get_total_spent, get_time_range
+from csv_import import read_td_csv, read_csv
 from statements import save_statement
 import csv
 from sqlalchemy import select, inspect, text, update, func
 from sqlalchemy.orm import Session
 
 from database import Base, engine, get_session
-from analytics import get_total_savings, get_total_goal_contributions, get_total_debt, get_total_bills, read_csv
+from analytics import get_total_savings, get_total_goal_contributions, get_total_debt, get_total_bills
 from models import Bills, FinancialGoal, BillPayment, Debts, DebtPayment
 from schemas import BillCreate, BillRead, GoalCreate, GoalRead, GoalUpdate, GoalContribution, PaymentCreate, DebtCreate, DebtRead, DebtUpdate, DebtPaymentCreate
 from decimal import Decimal
 from datetime import date
+from calendar import monthrange
+from models import Paycheque
+from schemas import PaychequeCreate, PaychequeRead
+from accounts import router as accounts_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    if "recurrence_day" not in {column["name"] for column in inspect(engine).get_columns("bills")}:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE bills ADD COLUMN recurrence_day INTEGER"))
     # Add the new field to existing SQLite databases without replacing user data.
     if "is_paid" not in {column["name"] for column in inspect(engine).get_columns("bills")}:
         with engine.begin() as connection:
@@ -28,6 +36,21 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(accounts_router)
+
+
+@app.get("/api/paycheques/latest", response_model=PaychequeRead | None)
+def latest_paycheque(session: Annotated[Session, Depends(get_session)]):
+    return session.scalar(select(Paycheque).order_by(Paycheque.id.desc()).limit(1))
+
+
+@app.post("/api/paycheques", response_model=PaychequeRead, status_code=201)
+def create_paycheque(payload: PaychequeCreate, session: Annotated[Session, Depends(get_session)]):
+    paycheque = Paycheque(amount=payload.amount)
+    session.add(paycheque)
+    session.commit()
+    session.refresh(paycheque)
+    return paycheque
 
 # Analytic endpoints
 @app.get("/api/analytics/savings", response_model=dict[str, Decimal])
@@ -64,7 +87,10 @@ def create_goal(goal: GoalCreate, session: Annotated[Session, Depends(get_sessio
 
 @app.post("/api/bills", response_model=BillRead, status_code=201)
 def create_bill(bill: BillCreate, session: Annotated[Session, Depends(get_session)]):
+    if bill.recurring and bill.due_date is None:
+        raise HTTPException(422, "Choose a due date for a monthly bill.")
     saved_bill = Bills(**bill.model_dump())
+    saved_bill.recurrence_day = bill.due_date.day if bill.due_date else None
     session.add(saved_bill)
     session.commit()
     session.refresh(saved_bill)
@@ -80,6 +106,24 @@ def get_or_404(session, model, item_id):
     if item is None:
         raise HTTPException(404, "Item not found")
     return item
+
+
+@app.delete("/api/goals/{item_id}", status_code=204)
+def delete_goal(item_id: int, session: Annotated[Session, Depends(get_session)]):
+    session.delete(get_or_404(session, FinancialGoal, item_id))
+    session.commit()
+
+
+@app.delete("/api/bills/{item_id}", status_code=204)
+def delete_bill(item_id: int, session: Annotated[Session, Depends(get_session)]):
+    session.delete(get_or_404(session, Bills, item_id))
+    session.commit()
+
+
+@app.delete("/api/debts/{item_id}", status_code=204)
+def delete_debt(item_id: int, session: Annotated[Session, Depends(get_session)]):
+    session.delete(get_or_404(session, Debts, item_id))
+    session.commit()
 
 
 @app.put("/api/goals/{goal_id}", response_model=GoalRead)
@@ -108,10 +152,13 @@ def add_to_goal(goal_id: int, contribution: GoalContribution, session: Annotated
 
 @app.put("/api/bills/{bill_id}", response_model=BillRead)
 def update_bill(bill_id: int, bill: BillCreate, session: Annotated[Session, Depends(get_session)]):
+    if bill.recurring and bill.due_date is None:
+        raise HTTPException(422, "Choose a due date for a monthly bill.")
     saved = get_or_404(session, Bills, bill_id)
     # Scheduling a new occurrence makes it unpaid; history remains intact.
     if bill.due_date != saved.due_date:
         saved.is_paid = False
+        saved.recurrence_day = bill.due_date.day if bill.due_date else None
     for field, value in bill.model_dump().items():
         setattr(saved, field, value)
     session.commit()
@@ -126,15 +173,27 @@ def record_payment(bill_id: int, payment: PaymentCreate, session: Annotated[Sess
         raise HTTPException(409, "This bill is already paid. Set a new due date to record another payment.")
     if payment.paid_on > date.today():
         raise HTTPException(422, "Payment date cannot be in the future.")
+    next_due_date = payment.next_due_date
+    if bill.recurring and next_due_date is None:
+        if bill.due_date is None:
+            raise HTTPException(422, "Set a due date before recording a recurring bill payment.")
+        year = bill.due_date.year + (bill.due_date.month == 12)
+        month = bill.due_date.month % 12 + 1
+        if year > 9999:
+            raise HTTPException(422, "The next due date is outside the supported date range.")
+        bill.recurrence_day = bill.recurrence_day or bill.due_date.day
+        next_due_date = date(year, month, min(bill.recurrence_day, monthrange(year, month)[1]))
     if payment.next_due_date is not None:
         if not bill.recurring:
             raise HTTPException(422, "Only recurring bills can have a next due date.")
         if payment.next_due_date <= max(payment.paid_on, bill.due_date or payment.paid_on):
             raise HTTPException(422, "Next due date must be after the payment date and current due date.")
     session.add(BillPayment(bill_id=bill.id, amount=payment.amount, paid_on=payment.paid_on, due_date=bill.due_date))
-    bill.is_paid = payment.next_due_date is None
-    if payment.next_due_date is not None:
-        bill.due_date = payment.next_due_date
+    bill.is_paid = next_due_date is None
+    if next_due_date is not None:
+        if payment.next_due_date is not None:
+            bill.recurrence_day = next_due_date.day
+        bill.due_date = next_due_date
     session.commit()
     session.refresh(bill)
     return bill
@@ -221,3 +280,4 @@ def read_root():
 @app.get("/items/{item_id}")
 def read_item(item_id: int, q: str | None = None):
     return {"item_id": item_id, "q": q}
+

@@ -69,3 +69,4 @@ def test_reject_invalid_goal(client, changes):
     })
     assert response.status_code == 422
     assert client.get('/api/goals').json() == []
+

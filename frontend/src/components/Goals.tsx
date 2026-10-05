@@ -1,48 +1,18 @@
+import AutoTextarea from './AutoTextarea'
+import EmptyState from './EmptyState'
+import AppForm from './AppForm'
 import Notice from './Notice'
+import DeleteItem from './DeleteItem'
 import useNotice from '../hooks/useNotice'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import Modal from './Modal'
 import CollapsibleItem from './CollapsibleItem'
 import EditForm from './EditForm'
-import { amount, saveRecord } from '../api'
+import { amount } from '../api'
+import GoalFunding from './GoalFunding'
+import GoalPlan from './GoalPlan'
 import type { Goal } from '../types'
-
-function AddAmountForm({ goal, onSave }: { goal: Goal; onSave: (goal: Goal) => void }) {
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useNotice()
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (saving) return
-    const form = event.currentTarget
-    const addition = String(new FormData(form).get('amount'))
-    setSaving(true)
-    setError('')
-    setNotice('')
-    try {
-      const updated = await saveRecord<Goal>(`/api/goals/${goal.id}/contributions`, 'POST', { amount: addition })
-      onSave(updated)
-      form.reset()
-      setNotice(`Added ${amount(addition)}. Now saved: ${amount(updated.current_amount)}.`)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Unable to add amount.')
-    } finally { setSaving(false) }
-  }
-
-  return <form className="contribution-form" onSubmit={submit} aria-label={`Add savings to ${goal.name}`}>
-    <fieldset disabled={saving}>
-      <label htmlFor={`contribution-${goal.id}`}>Amount to add</label>
-      <div className="contribution-controls">
-        <input id={`contribution-${goal.id}`} name="amount" type="number" min="0.01" max="999999999999.99" step="0.01" required placeholder="0.00" />
-        <button type="submit">{saving ? 'Adding…' : 'Add amount'}</button>
-      </div>
-    </fieldset>
-    {error && <p role="alert">{error}</p>}
-    <Notice message={notice} />
-  </form>
-}
 
 export default function Goals({ onSavingsChange }: { onSavingsChange: () => void }) {
   const [creating, setCreating] = useState(false)
@@ -69,7 +39,7 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
       }
     }
     void loadGoals()
-    return () => controller.abort()
+  return () => controller.abort()
   }, [])
 
   async function createGoal(event: FormEvent<HTMLFormElement>) {
@@ -95,7 +65,7 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
         const body = await response.json().catch(() => null)
         const message = Array.isArray(body?.detail)
           ? body.detail.map((error: { loc: string[]; msg: string }) => `${error.loc.slice(1).join(' ')}: ${error.msg}`).join('. ')
-          : 'Unable to save your goal. Please try again.'
+          : typeof body?.detail === 'string' ? body.detail : 'Unable to save your goal. Please try again.'
         throw new Error(message)
       }
       const goal: Goal = await response.json()
@@ -111,15 +81,44 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
     }
   }
 
+  function renderGoal(goal: Goal) {
+    return (
+            <CollapsibleItem key={goal.id} title={goal.name}
+              summary={<><strong>{amount(goal.current_amount)}</strong> saved of {amount(goal.target_amount)}</>}
+              progress={Number(goal.current_amount)} target={Number(goal.target_amount)} progressLabel={`${goal.name} progress`}>
+              {goal.due_date && <p>Due <time dateTime={goal.due_date}>{goal.due_date}</time></p>}
+              <GoalPlan goal={goal} />
+              {goal.description && <p className="description">{goal.description}</p>}
+              <p>{Math.round(Number(goal.current_amount) / Number(goal.target_amount) * 100)}% saved{Number(goal.current_amount) >= Number(goal.target_amount) ? ' · Goal reached!' : ` · ${amount(String(Number(goal.target_amount) - Number(goal.current_amount)))} to go`}</p>
+              {editing === goal.id ? <EditForm item={goal} kind="goals" onCancel={() => setEditing(null)} onSave={updated => {
+                setGoals(previous => previous.map(item => item.id === updated.id ? updated as Goal : item))
+                setEditing(null)
+                setNotice(`Updated ${updated.name}.`)
+              }} /> : <>
+                <GoalFunding goal={goal} onSave={updated => {
+                  setGoals(previous => previous.map(item => item.id === updated.id ? updated : item))
+                  onSavingsChange()
+                }} />
+                <button className="secondary" type="button" disabled={editing !== null} onClick={() => setEditing(goal.id)}>Edit goal</button>
+                <DeleteItem kind="goals" id={goal.id} name={goal.name} disabled={editing !== null} onDelete={() => {
+                  setGoals(previous => previous.filter(item => item.id !== goal.id))
+                  onSavingsChange()
+                  setNotice(`Deleted ${goal.name}.`)
+                }} />
+              </>}
+
+            </CollapsibleItem>
+  ) }
+
   return (
       <div className="dashboard-column">
-      <div className="list-heading"><div><h2 className="column-heading">Financial goals</h2><p>Make room for what matters.</p></div>
+      <div className="list-heading"><div><h2 className="column-heading">Goals</h2><p>Choose a target, make a saving plan, and give your savings a purpose.</p></div>
         <button type="button" onClick={() => { setSaveError(''); setCreating(true); }}>Add goal</button></div>
       {creating && <Modal title="Create a goal" busy={saving} onClose={() => setCreating(false)}>
-        <form onSubmit={createGoal}>
+        <AppForm onSubmit={createGoal}>
           <fieldset disabled={saving}>
-            <label>Goal name
-              <input name="name" required maxLength={120} placeholder="Emergency fund" />
+            <label>What are you saving for?
+              <input name="name" required maxLength={120} placeholder="Emergency fund, vacation…" />
             </label>
             <div className="amount-fields">
               <label>Target amount
@@ -129,48 +128,37 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
                 <input name="current_amount" type="number" min="0" max="999999999999.99" step="0.01" required defaultValue="0" />
               </label>
             </div>
-            <label>Due date (optional)
+            <label>When would you like to reach it? (optional)
               <input name="due_date" type="date" />
             </label>
-            <label>Description (optional)
-              <textarea name="description" maxLength={2000} rows={3} />
+            <label>Why this matters / how you will save (optional)
+              <AutoTextarea name="description" maxLength={2000} rows={3} placeholder="For example: set aside part of each paycheque for a summer trip." />
             </label>
             <button type="submit" disabled={loading}>{saving ? 'Saving…' : 'Create goal'}</button>
           </fieldset>
           {saveError && <p role="alert">{saveError}</p>}
-        </form>
+        </AppForm>
       </Modal>}
       <Notice message={notice} />
       <section aria-labelledby="goals-heading" aria-busy={loading}>
-        <h3 id="goals-heading">Your goals</h3>
+        <h3 className="sr-only" id="goals-heading">Your goals</h3>
         {loading && <p>Loading goals…</p>}
         {loadError && <p role="alert">{loadError}</p>}
-        {!loading && !loadError && goals.length === 0 && <p>No goals yet. Use “Add goal” to start saving for something.</p>}
+        {!loading && !loadError && goals.length === 0 && <EmptyState title="Start with something that matters" description="A rainy-day fund, a trip, or your next big step. Give it a target and build from there." action="Create your first goal" onAction={() => { setSaveError(''); setCreating(true); }} />}
         <div className="goals">
-          {goals.map(goal => (
-            <CollapsibleItem key={goal.id} title={goal.name}
-              summary={<><strong>{amount(goal.current_amount)}</strong> saved of {amount(goal.target_amount)}</>}
-              progress={Number(goal.current_amount)} target={Number(goal.target_amount)} progressLabel={`${goal.name} progress`}>
-              {goal.due_date && <p>Due <time dateTime={goal.due_date}>{goal.due_date}</time></p>}
-              {goal.description && <p className="description">{goal.description}</p>}
-              <p>{Math.round(Number(goal.current_amount) / Number(goal.target_amount) * 100)}% saved{Number(goal.current_amount) >= Number(goal.target_amount) ? ' · Goal reached!' : ` · ${amount(String(Number(goal.target_amount) - Number(goal.current_amount)))} to go`}</p>
-              {editing === goal.id ? <EditForm item={goal} kind="goals" onCancel={() => setEditing(null)} onSave={updated => {
-                setGoals(previous => previous.map(item => item.id === updated.id ? updated as Goal : item))
-                setEditing(null)
-                setNotice(`Updated ${updated.name}.`)
-              }} /> : <>
-                <AddAmountForm goal={goal} onSave={updated => {
-                  setGoals(previous => previous.map(item => item.id === updated.id ? updated : item))
-                  onSavingsChange()
-                }} />
-                <button className="secondary" type="button" disabled={editing !== null} onClick={() => setEditing(goal.id)}>Edit goal</button>
-              </>}
-            </CollapsibleItem>
-          ))}
+          {goals.map(renderGoal)}
         </div>
       </section>
       </div>
   )
 }
+
+
+
+
+
+
+
+
 
 

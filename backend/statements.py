@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from models import StatementImport, Transaction
-from analytics import parse_statement_date
+from csv_import import parse_statement_date
 
 
 def save_statement(session: Session, filename: str, contents: bytes, rows: list[list[str]]) -> dict:

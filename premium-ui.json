@@ -1,0 +1,13 @@
+{
+  "profile": "product-admin",
+  "sourceRoots": ["frontend/src"],
+  "canonicalMap": "UX-CONTRACT.md",
+  "requiredCapabilities": ["Form", "Date", "Select/Listbox", "Scrollbar", "Toast", "CRUD"],
+  "ownership": { "Date": "native", "Select/Listbox": "native" },
+  "requiredCommands": ["build", "lint", "test"],
+  "commands": {
+    "build": "cd frontend && npm run build",
+    "lint": "cd frontend && npm run lint",
+    "test": "cd frontend && node --test tests/*.test.mjs"
+  }
+}

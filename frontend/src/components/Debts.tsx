@@ -1,4 +1,8 @@
+import AutoTextarea from './AutoTextarea'
+import EmptyState from './EmptyState'
+import AppForm from './AppForm'
 import Notice from './Notice'
+import DeleteItem from './DeleteItem'
 import useNotice from '../hooks/useNotice'
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
@@ -38,21 +42,21 @@ function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
       setError(error instanceof Error ? error.message : 'Unable to save debt.')
     } finally { pending.current = false; setSaving(false); onSavingChange?.(false) }
   }
-  return <form onSubmit={submit} className={debt ? 'inline-form' : undefined} aria-label={debt ? `Edit ${debt.name}` : 'Add a debt'}>
+  return <AppForm onSubmit={submit} className={debt ? 'inline-form' : undefined} aria-label={debt ? `Edit ${debt.name}` : 'Add a debt'}>
     <fieldset disabled={saving}>
       <label>Debt name<input name="name" required maxLength={120} placeholder="Student loan" defaultValue={debt?.name} /></label>
       <label>Total debt<input name="amount" type="number" min="0.01" max="999999999999.99" step="0.01" required defaultValue={debt?.amount} placeholder="5000.00" /></label>
       {!debt && <label>Already paid<input name="current_amount" type="number" min="0" max="999999999999.99" step="0.01" required defaultValue="0" /><small>Opening progress from before you started tracking. New payments will have their own history.</small></label>}
       <label>Due date (optional)<input name="due_date" type="date" defaultValue={debt?.due_date ?? ''} /></label>
       <label>Interest rate % (optional)<input name="interest_rate" type="number" min="0" max="100" step="0.01" defaultValue={debt?.interest_rate ?? ''} /><small>For reference only. Interest is not added automatically.</small></label>
-      <label>Description (optional)<textarea name="description" maxLength={2000} rows={3} defaultValue={debt?.description ?? ''} /></label>
+      <label>Description (optional)<AutoTextarea name="description" maxLength={2000} rows={3} defaultValue={debt?.description ?? ''} /></label>
       <div className="actions"><button type="submit">{saving ? 'Saving…' : debt ? 'Save changes' : 'Add debt'}</button>{onCancel && <button className="secondary" type="button" onClick={onCancel}>Cancel</button>}</div>
     </fieldset>
     {error && <p role="alert">{error}</p>}
-  </form>
+  </AppForm>
 }
 
-function DebtCard({ debt, onSave }: { debt: DebtType; onSave: (debt: DebtType) => void }) {
+function DebtCard({ debt, onSave, onDelete }: { debt: DebtType; onSave: (debt: DebtType) => void; onDelete: () => void }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -87,7 +91,7 @@ function DebtCard({ debt, onSave }: { debt: DebtType; onSave: (debt: DebtType) =
       {debt.payments.map(payment => <li key={payment.id}><strong>{amount(payment.amount)}</strong> paid on <time dateTime={payment.paid_on}>{payment.paid_on}</time></li>)}
     </ul></details>}
     {editing ? <DebtForm debt={debt} onCancel={() => setEditing(false)} onSave={updated => { onSave(updated); setEditing(false); }} /> : <>
-      {!paidOff && <form className="contribution-form" onSubmit={pay} aria-label={`Record payment for ${debt.name}`}>
+      {!paidOff && <AppForm className="contribution-form" onSubmit={pay} aria-label={`Record payment for ${debt.name}`}>
         <fieldset disabled={saving}>
           <label>Payment amount<input name="amount" type="number" min="0.01" max={debt.remaining_amount} step="0.01" required placeholder="0.00" /></label>
           <label>Payment date<input name="paid_on" type="date" max={today()} required defaultValue={today()} /></label>
@@ -95,8 +99,9 @@ function DebtCard({ debt, onSave }: { debt: DebtType; onSave: (debt: DebtType) =
           <small>Records a payment you made; no money is sent.</small>
         </fieldset>
         {error && <p role="alert">{error}</p>}
-      </form>}
+      </AppForm>}
       <button className="secondary" type="button" disabled={saving} onClick={() => setEditing(true)}>Edit debt</button>
+      <DeleteItem kind="debts" id={debt.id} name={debt.name} disabled={saving} onDelete={onDelete} />
     </>}
   </CollapsibleItem>
 }
@@ -131,14 +136,22 @@ export default function Debts({ onChange }: { onChange: () => void }) {
     </Modal>}
     <Notice message={notice} />
     <section aria-labelledby="debts-heading" aria-busy={loading}>
-      <h3 id="debts-heading">Your debts</h3>
+      <h3 className="sr-only" id="debts-heading">Your debts</h3>
       {loading && <p>Loading debts…</p>}
       {error && <p role="alert">{error}</p>}
-      {!loading && !error && debts.length === 0 && <p>No debts yet. Use “Add debt” to track your repayments.</p>}
-      {debts.map(debt => <DebtCard key={debt.id} debt={debt} onSave={updated => { setDebts(previous => previous.map(item => item.id === updated.id ? updated : item)); onChange(); }} />)}
+      {!loading && !error && debts.length === 0 && <EmptyState title="A clearer path to debt-free" description="Add a balance to track payments and see how far you have come." action="Add your first debt" onAction={() => setCreating(true)} />}
+      {debts.map(debt => <DebtCard key={debt.id} debt={debt} onDelete={() => {
+        setDebts(previous => previous.filter(item => item.id !== debt.id))
+        onChange()
+        setNotice(`Deleted ${debt.name}.`)
+      }} onSave={updated => { setDebts(previous => previous.map(item => item.id === updated.id ? updated : item)); onChange(); }} />)}
     </section>
   </div>
 }
+
+
+
+
 
 
 

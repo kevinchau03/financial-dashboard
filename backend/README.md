@@ -66,6 +66,18 @@ with Session(engine) as session:
 
 ## Editing and payments
 
+- Goals are independent. Each has its own target, saved balance, optional date,
+  and description. Contributions add savings directly to the selected goal.
+  On startup, legacy sub-goals become standalone goals; their balances are
+  deducted from their former parent's balance to preserve total savings.
+  The legacy nullable parent column is cleared and retained only in old databases.
+  Allocation and release APIs are removed. Monthly planning estimates remain.
+
+- `DELETE /api/goals/{id}`, `DELETE /api/bills/{id}`, and `DELETE /api/debts/{id}`
+  permanently remove an item and return 204 (404 if missing). Bill and debt
+  payment histories are deleted in the same transaction. The frontend asks for
+  confirmation and refreshes the corresponding summary totals.
+
 - `PUT /api/goals/{id}` edits name, target amount, due date, and description,
   preserving the saved balance. `current_amount` is not accepted for edits.
 - `POST /api/goals/{id}/contributions` accepts a positive `amount` with up to two
@@ -78,8 +90,13 @@ with Session(engine) as session:
   not tracked: a payment settles the current occurrence even if its amount differs.
 - Bill responses include `is_paid` and `payments`, newest payment date first.
   Payments preserve the amount paid and the due date of the settled occurrence.
-- Without a next due date, a payment marks the bill paid. With a next due date,
-  it schedules the next unpaid occurrence. No recurrence interval is assumed.
+- Recurring bills repeat monthly and require a due date when created or edited.
+  Recording a payment advances one month from the current due date, preserving
+  the selected day (January 31 → February 28/29 → March 31). Late payments do
+  not skip unpaid months. The next occurrence is unpaid; history records the
+  settled occurrence. One-time bills are marked paid.
+  The API still supports an explicit `next_due_date` override, which resets the
+  monthly day. Existing bills acquire their monthly day on their next payment.
   Changing a bill's due date also schedules an unpaid occurrence and keeps history.
 - Existing SQLite databases receive an additive `is_paid` column at startup;
   the payment-history table is created automatically. Existing records are preserved.

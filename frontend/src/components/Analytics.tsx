@@ -7,7 +7,7 @@ type Metric = { title: string; endpoint: string; field: string; description: str
 const metrics: Metric[] = [
   { title: 'Total savings', endpoint: '/api/analytics/savings', field: 'total_savings', description: 'Saved across all your financial goals.' },
   { title: 'Remaining debt', endpoint: '/api/analytics/debts', field: 'total_debt', description: 'Total debt balance still to repay.' },
-  { title: 'Total bills', endpoint: '/api/analytics/bills', field: 'total_bills', description: 'All recorded bill amounts, including paid bills.' },
+  { title: 'Recorded bills', endpoint: '/api/analytics/bills', field: 'total_bills', description: 'All recorded bill amounts, including paid bills.' },
 ]
 
 function MetricCard({ metric, revision }: { metric: Metric; revision: number }) {
@@ -48,3 +48,4 @@ export default function Analytics({ revision }: { revision: number }) {
     {metrics.map(metric => <MetricCard key={metric.field} metric={metric} revision={revision} />)}
   </div>
 }
+

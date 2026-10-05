@@ -7,6 +7,22 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120))
+    account_type: Mapped[str] = mapped_column(String(30))
+    balance: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
+class Paycheque(Base):
+    __tablename__ = "paycheques"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
 class StatementImport(Base):
     __tablename__ = "statement_imports"
 
@@ -48,7 +64,8 @@ class Bills(Base):
     recurring: Mapped[bool] = mapped_column(nullable=False, default=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_paid: Mapped[bool] = mapped_column(default=False, server_default="0")
-    payments: Mapped[list["BillPayment"]] = relationship(order_by="desc(BillPayment.paid_on), desc(BillPayment.id)", lazy="selectin")
+    recurrence_day: Mapped[int | None] = mapped_column(nullable=True)
+    payments: Mapped[list["BillPayment"]] = relationship(order_by="desc(BillPayment.paid_on), desc(BillPayment.id)", lazy="selectin", cascade="all, delete-orphan")
 
 
 class BillPayment(Base):
@@ -70,7 +87,7 @@ class Debts(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     interest_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    payments: Mapped[list["DebtPayment"]] = relationship(order_by="desc(DebtPayment.paid_on), desc(DebtPayment.id)", lazy="selectin")
+    payments: Mapped[list["DebtPayment"]] = relationship(order_by="desc(DebtPayment.paid_on), desc(DebtPayment.id)", lazy="selectin", cascade="all, delete-orphan")
 
     @property
     def remaining_amount(self) -> Decimal:

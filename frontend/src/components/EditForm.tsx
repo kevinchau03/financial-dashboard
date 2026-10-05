@@ -1,3 +1,5 @@
+import AutoTextarea from './AutoTextarea'
+import AppForm from './AppForm'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { saveRecord } from '../api'
@@ -26,22 +28,25 @@ export default function EditForm({ item, kind, onSave, onCancel }: {
       setError(error instanceof Error ? error.message : 'Unable to save changes.')
     } finally { setSaving(false) }
   }
-  return <form className="inline-form" onSubmit={submit} aria-label={`Edit ${item.name}`}>
+  return <AppForm className="inline-form" onSubmit={submit} aria-label={`Edit ${item.name}`}>
     <fieldset disabled={saving}>
       <label>Name<input name="name" required maxLength={120} defaultValue={item.name} autoFocus /></label>
       {'target_amount' in item ? <div className="amount-fields">
         <label>Target amount<input name="target_amount" type="number" min="0.01" max="999999999999.99" step="0.01" required defaultValue={item.target_amount} /></label>
       </div> : <>
         <label>Amount<input name="amount" type="number" min="0.01" max="999999999999.99" step="0.01" required defaultValue={item.amount} /></label>
-        <label className="checkbox-label"><input name="recurring" type="checkbox" defaultChecked={item.recurring} />Recurring bill</label>
+        <label className="checkbox-label"><input name="recurring" type="checkbox" defaultChecked={item.recurring} />Repeat monthly</label>
       </>}
-      <label>Due date (optional)<input name="due_date" type="date" defaultValue={item.due_date ?? ''} /></label>
+      <label>{kind === 'bills' ? 'Due date (required for monthly bills)' : 'Target date (optional)'}<input name="due_date" type="date" defaultValue={item.due_date ?? ''} /></label>
       {'is_paid' in item && item.is_paid && <small>Changing the due date schedules a new unpaid bill. Previous payments stay in your history.</small>}
-      <label>Description (optional)<textarea name="description" maxLength={2000} rows={3} defaultValue={item.description ?? ''} /></label>
+      <label>Description (optional)<AutoTextarea name="description" maxLength={2000} rows={3} defaultValue={item.description ?? ''} /></label>
       <div className="actions"><button type="submit">{saving ? 'Saving…' : 'Save changes'}</button><button className="secondary" type="button" onClick={onCancel}>Cancel</button></div>
     </fieldset>
     {error && <p role="alert">{error}</p>}
-  </form>
+  </AppForm>
 }
+
+
+
 
 

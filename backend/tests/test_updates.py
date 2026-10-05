@@ -60,10 +60,10 @@ def test_payment_and_next_occurrence(client):
     assert saved['payments'][0]['amount'] == '60.25'
     second = client.post(url + '/payments', json={'amount': '65', 'paid_on': '2025-02-10'})
     assert second.status_code == 201
-    assert second.json()['is_paid'] is True
+    assert second.json()['is_paid'] is False
+    assert second.json()['due_date'] == '2025-03-10'
     assert len(second.json()['payments']) == 2
     assert second.json()['payments'][0]['paid_on'] == '2025-02-10'
-    assert client.post(url + '/payments', json={'amount': '65', 'paid_on': '2025-02-10'}).status_code == 409
     edited = client.put(url, json={'name': 'New internet', 'amount': '70', 'recurring': True, 'due_date': '2025-03-10'}).json()
     assert edited['is_paid'] is False
     assert len(edited['payments']) == 2
