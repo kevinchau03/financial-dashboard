@@ -106,7 +106,7 @@ function DebtCard({ debt, onSave, onDelete }: { debt: DebtType; onSave: (debt: D
   </CollapsibleItem>
 }
 
-export default function Debts({ onChange }: { onChange: () => void }) {
+export default function Debts({ onChange = () => undefined, revision = 0 }: { onChange?: () => void; revision?: number }) {
   const [creating, setCreating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [debts, setDebts] = useState<DebtType[]>([])
@@ -116,6 +116,7 @@ export default function Debts({ onChange }: { onChange: () => void }) {
   useEffect(() => {
     const controller = new AbortController()
     async function load() {
+      setError('')
       try {
         const response = await fetch('/api/debts', { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load debts. Check the backend and refresh the page.')
@@ -127,8 +128,8 @@ export default function Debts({ onChange }: { onChange: () => void }) {
     }
     void load()
     return () => controller.abort()
-  }, [])
-  return <div className="dashboard-column">
+  }, [revision])
+  return <div className="dashboard-column" data-tone="rose">
     <div className="list-heading"><div><h2 className="column-heading">Debts</h2><p>Slowly chip away at your debt.</p></div>
       <button type="button" disabled={loading} onClick={() => setCreating(true)}>Add debt</button></div>
     {creating && <Modal title="Add a debt" busy={saving} onClose={() => setCreating(false)}>

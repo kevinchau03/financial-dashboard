@@ -1,0 +1,31 @@
+[data-tone='sky'] { --card-accent: var(--accent-sky); --card-surface: var(--surface-sky); }
+[data-tone='leaf'] { --card-accent: var(--accent-leaf); --card-surface: var(--surface-leaf); }
+[data-tone='sun'] { --card-accent: var(--accent-sun); --card-surface: var(--surface-sun); }
+[data-tone='rose'] { --card-accent: var(--accent-rose); --card-surface: var(--surface-rose); }
+h1 { color: var(--accent-leaf); }
+.brand, .site-brand { color: var(--accent-sky); }
+.stat-card[data-tone], .overview-page .overview-metrics .stat-card[data-tone] { background: var(--card-surface); }
+.overview-page .overview-spending-stats .stat-card[data-tone] { background: var(--card-surface); }
+.stat-card[data-tone] h2, .stat-card[data-tone] .stat-value { color: var(--card-accent); }
+.overview-page .overview-panel[data-tone] { background: linear-gradient(180deg, var(--card-surface), var(--budget-paper) 180px); border-top: 4px solid var(--card-accent); }
+.overview-page .overview-panel[data-tone] .overview-heading h2,
+.overview-page .overview-panel[data-tone] .overview-list li > strong { color: var(--card-accent); }
+.overview-page .overview-panel[data-tone] progress { accent-color: var(--card-accent); }
+.budget-page .dashboard-column[data-tone] > section { background: var(--card-surface); border-top: 4px solid var(--card-accent); }
+.budget-page .dashboard-column[data-tone] .column-heading,
+.budget-page .dashboard-column[data-tone] .item-balance strong { color: var(--card-accent); }
+.budget-page .dashboard-column[data-tone] .collapsible-item { background: var(--budget-paper); }
+.budget-page .dashboard-column[data-tone] progress::-webkit-progress-value { background: var(--card-accent); }
+.budget-page .dashboard-column[data-tone] progress::-moz-progress-bar { background: var(--card-accent); }
+.budget-page .bills-sidebar > section { background: var(--surface-sun); border-top: 4px solid var(--accent-sun); }
+.budget-page .bills-sidebar .column-heading, .budget-page .bill-summary-top strong { color: var(--accent-sun); }
+.budget-page .paycheque-card.paycheque-planner { background: var(--surface-sky); border-color: #b6cedd; }
+.budget-page .paycheque-overview h2 { color: var(--accent-sky); }
+.account-grid > section { background: var(--surface-sky); border-top: 4px solid var(--accent-sky); }
+.account-grid h2, .account-grid .stat-value { color: var(--accent-sky); }
+.accounts-page h1 { color: var(--accent-sky); }
+.feature-grid > section:nth-child(1) { background: var(--surface-leaf); border-top: 4px solid var(--accent-leaf); }
+.feature-grid > section:nth-child(2) { background: var(--surface-sun); border-top: 4px solid var(--accent-sun); }
+.feature-grid > section:nth-child(3) { background: var(--surface-sky); border-top: 4px solid var(--accent-sky); }
+.wrapped-page > .page-intro h1 { color: var(--accent-sky); }
+@media (forced-colors: active) { .overview-page .overview-panel[data-tone] { background: Canvas; } }

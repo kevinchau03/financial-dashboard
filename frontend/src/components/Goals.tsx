@@ -14,7 +14,7 @@ import GoalFunding from './GoalFunding'
 import GoalPlan from './GoalPlan'
 import type { Goal } from '../types'
 
-export default function Goals({ onSavingsChange }: { onSavingsChange: () => void }) {
+export default function Goals({ onSavingsChange = () => undefined, revision = 0 }: { onSavingsChange?: () => void; revision?: number }) {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<number | null>(null)
   const [goals, setGoals] = useState<Goal[]>([])
@@ -27,6 +27,7 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
   useEffect(() => {
     const controller = new AbortController()
     async function loadGoals() {
+      setLoadError('')
       try {
         const response = await fetch('/api/goals', { signal: controller.signal })
         if (!response.ok) throw new Error('Failed to load goals')
@@ -40,7 +41,7 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
     }
     void loadGoals()
   return () => controller.abort()
-  }, [])
+  }, [revision])
 
   async function createGoal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -111,7 +112,7 @@ export default function Goals({ onSavingsChange }: { onSavingsChange: () => void
   ) }
 
   return (
-      <div className="dashboard-column">
+      <div className="dashboard-column" data-tone="leaf">
       <div className="list-heading"><div><h2 className="column-heading">Goals</h2><p>Choose a target, make a saving plan, and give your savings a purpose.</p></div>
         <button type="button" onClick={() => { setSaveError(''); setCreating(true); }}>Add goal</button></div>
       {creating && <Modal title="Create a goal" busy={saving} onClose={() => setCreating(false)}>

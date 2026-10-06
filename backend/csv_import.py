@@ -1,75 +1,110 @@
-# Read CSV file and return a list of dictionaries
+"""Read, clean, then load CSV uploads without mixing the three responsibilities."""
 import csv
 import io
-
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from datetime import date, datetime
+from typing import Literal
+
+from sqlalchemy.orm import Session
+
+TD_HEADERS = ['Date', 'Transaction', 'Debit', 'Credit', 'Balance']
 
 
-
-def read_csv(contents: bytes) -> dict:
-    """Parse uploaded UTF-8 CSV bytes without saving the file to disk."""
+def read_csv(contents: bytes, format: Literal['csv', 'td'] = 'csv') -> dict:
+    """Extract UTF-8 CSV cells. TD exports have no header; keep their first row."""
+    if format not in ('csv', 'td'):
+        raise ValueError('Choose csv or td format.')
     reader = csv.reader(io.StringIO(contents.decode('utf-8-sig'), newline=''), strict=True)
-    headers = next(reader, None)
-    if not headers or not any(header.strip() for header in headers):
-        raise ValueError('The CSV must have a header row.')
-    rows = []
-    for row in reader:
-        if not row:
-            continue
-        if len(row) != len(headers):
-            raise ValueError(f'CSV record ending on line {reader.line_num} has {len(row)} values; expected {len(headers)}.')
-        rows.append(row)
-    return {'headers': headers, 'rows': rows}
+    records = [(reader.line_num, row) for row in reader]
+    if format == 'td':
+        headers = TD_HEADERS.copy()
+    else:
+        while records and not any(cell.strip() for cell in records[0][1]):
+            records.pop(0)
+        if not records:
+            raise ValueError('The CSV must have a header row.')
+        _, headers = records.pop(0)
+    return {'format': format, 'headers': headers,
+            'rows': [row for _, row in records], 'line_numbers': [line for line, _ in records]}
 
-def parse_statement_date(value: str) -> date:
-    """Accept both date formats used by TD CSV exports."""
-    for date_format in ('%m/%d/%Y', '%Y-%m-%d'):
+
+def _parse_date(value: str) -> str:
+    """Normalize both supported TD date formats to an ISO date."""
+    for pattern in ('%m/%d/%Y', '%Y-%m-%d'):
         try:
-            return datetime.strptime(value, date_format).date()
+            return datetime.strptime(value, pattern).date().isoformat()
         except ValueError:
             continue
     raise ValueError('Date must use MM/DD/YYYY or YYYY-MM-DD.')
 
-def read_td_csv(contents: bytes) -> dict:
-    """Read TD's headerless date, transaction, debit, credit, balance export."""
-    reader = csv.reader(io.StringIO(contents.decode('utf-8-sig'), newline=''), strict=True)
+
+def _clean_amount(value: str, *, required: bool = False) -> str | None:
+    if not value and not required:
+        return None
+    try:
+        money = Decimal(value.replace(',', ''))
+        if not money.is_finite() or abs(money) > Decimal('999999999.99'):
+            raise InvalidOperation
+        if money != money.quantize(Decimal('.01')):
+            raise InvalidOperation
+    except InvalidOperation:
+        raise ValueError('must be a valid amount with at most two decimal places, up to 999999999.99 in magnitude.') from None
+    return format(money, '.2f')
+
+
+def clean_data(data: dict) -> dict:
+    """Skip empty rows, validate widths, and normalize TD cells without mutating input.
+
+    Generic CSV values retain their original text. TD whitespace is stripped,
+    dates become ISO strings, amounts become exact decimal strings, and missing
+    debits/credits become None. Invalid transactions reject the whole import.
+    """
+    format = data.get('format', 'td')
+    headers = TD_HEADERS.copy() if format == 'td' else data['headers'].copy()
     rows = []
-    for row in reader:
-        if not row or not any(cell.strip() for cell in row):
+    lines = data.get('line_numbers')
+    for index, raw in enumerate(data['rows']):
+        if not raw or not any(cell.strip() for cell in raw):
             continue
-        line = reader.line_num
-        if len(row) != 5:
-            raise ValueError(f'Line {line}: expected 5 columns: date, transaction, debit, credit, balance.')
-        row = [cell.strip() for cell in row]
+        line = lines[index] if lines is not None else index + 1
+        if len(raw) != len(headers):
+            raise ValueError(f'Line {line}: expected {len(headers)} columns; found {len(raw)}.')
+        if format != 'td':
+            rows.append(raw.copy())
+            continue
+        row = [cell.strip() for cell in raw]
         try:
-            parse_statement_date(row[0])
+            row[0] = _parse_date(row[0])
         except ValueError:
-            raise ValueError(f'Line {line}: date must use MM/DD/YYYY or YYYY-MM-DD. Upload a TD CSV without a header row.')
+            raise ValueError(f'Line {line}: date must use MM/DD/YYYY or YYYY-MM-DD. Upload a TD CSV without a header row.') from None
         if not row[1]:
             raise ValueError(f'Line {line}: transaction name is missing.')
-        for index, label in [(2, 'debit'), (3, 'credit'), (4, 'balance')]:
-            if not row[index] and index != 4:
-                continue
+        for column, label in ((2, 'debit and credit'), (3, 'debit and credit'), (4, 'balance')):
             try:
-                value = Decimal(row[index].replace(',', ''))
-                if not value.is_finite():
-                    raise InvalidOperation
-                if abs(value) > Decimal('999999999.99') or value != value.quantize(Decimal('0.01')):
-                    raise InvalidOperation
-            except InvalidOperation:
-                raise ValueError(f'Line {line}: {label} must be a valid amount with at most two decimal places, up to 999999999.99 in magnitude.')
+                row[column] = _clean_amount(row[column], required=column == 4)
+            except ValueError as error:
+                raise ValueError(f'Line {line}: {label} {error}') from None
         rows.append(row)
-    if not rows:
+    if format == 'td' and not rows:
         raise ValueError('The TD statement contains no transactions.')
-    return {'headers': ['Date', 'Transaction', 'Debit', 'Credit', 'Balance'], 'rows': rows}
+    return {'format': format, 'headers': headers, 'rows': rows}
 
-def clean_data() -> dict:
-    """Return a dictionary with empty strings replaced by None."""
-    def clean_value(value: str) -> str | None:
-        return value if value.strip() else None
 
-    def clean_row(row: list[str]) -> list[str | None]:
-        return [clean_value(value) for value in row]
+def load_csv(data: dict, session: Session | None = None, *, filename: str | None = None,
+             contents: bytes | None = None) -> dict:
+    """Build recognized table columns from cleaned data and optionally persist TD rows.
 
-    return {'headers': clean_row(self['headers']), 'rows': [clean_row(row) for row in self['rows']]}
+    Pass a session, filename and original bytes to save one statement atomically.
+    Without a session this returns the same table for preview. Keep the validated
+    balance in storage for compatibility, but expose Date/Transaction/Debit/Credit.
+    Generic CSVs are previewed with their own headers and are not persisted.
+    """
+    if data['format'] != 'td':
+        return {'headers': data['headers'].copy(), 'rows': [row.copy() for row in data['rows']]}
+    saved = {}
+    if session is not None:
+        if filename is None or contents is None:
+            raise ValueError('Saving a statement requires its filename and original CSV bytes.')
+        from statements import save_statement
+        saved = save_statement(session, filename, contents, data['rows'])
+    return {'headers': TD_HEADERS[:4], 'rows': [row[:4] for row in data['rows']], **saved}

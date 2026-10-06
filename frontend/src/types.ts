@@ -1,3 +1,5 @@
+export type CardTone = 'sky' | 'leaf' | 'sun' | 'rose'
+
 export type Goal = {
   id: number
   name: string

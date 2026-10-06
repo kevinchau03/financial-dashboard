@@ -1,4 +1,7 @@
+import type { CardTone } from '../types'
+
 type StatCardProps = {
+  tone?: CardTone
   title: string
   value: string
   description?: string
@@ -7,8 +10,8 @@ type StatCardProps = {
   onRetry?: () => void
 }
 
-export default function StatCard({ title, value, description, loading, error, onRetry }: StatCardProps) {
-  return <section className="stat-card" aria-label={title} aria-busy={loading}>
+export default function StatCard({ title, value, description, loading, error, onRetry, tone }: StatCardProps) {
+  return <section className="stat-card" data-tone={tone} aria-label={title} aria-busy={loading}>
     <h2>{title}</h2>
     <div aria-live="polite">
       {loading ? <p className="stat-value">Loading…</p> : error ? <>

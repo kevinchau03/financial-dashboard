@@ -4,8 +4,7 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, Form
 from typing import Literal
 from analytics import get_total_income, get_total_spent, get_time_range
-from csv_import import read_td_csv, read_csv
-from statements import save_statement
+from csv_import import clean_data, read_csv, load_csv
 import csv
 from sqlalchemy import select, inspect, text, update, func
 from sqlalchemy.orm import Session
@@ -17,14 +16,24 @@ from schemas import BillCreate, BillRead, GoalCreate, GoalRead, GoalUpdate, Goal
 from decimal import Decimal
 from datetime import date
 from calendar import monthrange
-from models import Paycheque
-from schemas import PaychequeCreate, PaychequeRead
 from accounts import router as accounts_router
+from statements import router as statements_router
+from paycheques import router as paycheques_router, detach_target
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    paycheque_columns = {column['name'] for column in inspect(engine).get_columns('paycheques')}
+    with engine.begin() as connection:
+        for name, definition in {'received_on': 'DATE', 'allocated_cents': 'INTEGER NOT NULL DEFAULT 0',
+                                 'request_id': 'VARCHAR(36)', 'request_fingerprint': 'VARCHAR(64)'}.items():
+            if name not in paycheque_columns:
+                connection.execute(text(f'ALTER TABLE paycheques ADD COLUMN {name} {definition}'))
+        connection.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS ix_paycheques_request_id ON paycheques(request_id)'))
+    if 'csv_contents' not in {column['name'] for column in inspect(engine).get_columns('statement_imports')}:
+        with engine.begin() as connection:
+            connection.execute(text('ALTER TABLE statement_imports ADD COLUMN csv_contents BLOB'))
     if "recurrence_day" not in {column["name"] for column in inspect(engine).get_columns("bills")}:
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE bills ADD COLUMN recurrence_day INTEGER"))
@@ -37,20 +46,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(accounts_router)
+app.include_router(statements_router)
+app.include_router(paycheques_router)
 
-
-@app.get("/api/paycheques/latest", response_model=PaychequeRead | None)
-def latest_paycheque(session: Annotated[Session, Depends(get_session)]):
-    return session.scalar(select(Paycheque).order_by(Paycheque.id.desc()).limit(1))
-
-
-@app.post("/api/paycheques", response_model=PaychequeRead, status_code=201)
-def create_paycheque(payload: PaychequeCreate, session: Annotated[Session, Depends(get_session)]):
-    paycheque = Paycheque(amount=payload.amount)
-    session.add(paycheque)
-    session.commit()
-    session.refresh(paycheque)
-    return paycheque
 
 # Analytic endpoints
 @app.get("/api/analytics/savings", response_model=dict[str, Decimal])
@@ -110,6 +108,7 @@ def get_or_404(session, model, item_id):
 
 @app.delete("/api/goals/{item_id}", status_code=204)
 def delete_goal(item_id: int, session: Annotated[Session, Depends(get_session)]):
+    detach_target(session, 'goal', item_id)
     session.delete(get_or_404(session, FinancialGoal, item_id))
     session.commit()
 
@@ -122,6 +121,7 @@ def delete_bill(item_id: int, session: Annotated[Session, Depends(get_session)])
 
 @app.delete("/api/debts/{item_id}", status_code=204)
 def delete_debt(item_id: int, session: Annotated[Session, Depends(get_session)]):
+    detach_target(session, 'debt', item_id)
     session.delete(get_or_404(session, Debts, item_id))
     session.commit()
 
@@ -254,21 +254,23 @@ async def upload_csv(file: UploadFile, session: Annotated[Session, Depends(get_s
         if len(contents) > 5 * 1024 * 1024:
             raise HTTPException(413, 'CSV files must be no larger than 5 MB.')
         try:
-            data = read_td_csv(contents) if format == 'td' else read_csv(contents)
+            extracted = read_csv(contents, format=format)
+            cleaned = clean_data(extracted)
+            data = load_csv(cleaned, session, filename=file.filename, contents=contents)
         except UnicodeDecodeError:
             raise HTTPException(400, 'Please save your CSV with UTF-8 encoding.')
         except (csv.Error, ValueError) as error:
             raise HTTPException(400, str(error))
-        saved = save_statement(session, file.filename, contents, data['rows']) if format == 'td' else {}
         if format == 'td':
-            start_date, end_date = get_time_range(session)
-            saved['stats'] = {
-                'total_income': str(get_total_income(session)),
-                'total_spent': str(get_total_spent(session)),
+            statement_id = data['statement_id']
+            start_date, end_date = get_time_range(session, statement_id)
+            data['stats'] = {
+                'total_income': str(get_total_income(session, statement_id)),
+                'total_spent': str(get_total_spent(session, statement_id)),
                 'start_date': start_date,
                 'end_date': end_date,
             }
-        return {'filename': file.filename, **data, 'row_count': len(data['rows']), **saved}
+        return {'filename': file.filename, **data, 'row_count': len(data['rows'])}
     finally:
         await file.close()
 

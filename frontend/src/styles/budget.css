@@ -23,10 +23,11 @@
 .budget-eyebrow { display: block; color: var(--budget-moss); font-size: .75rem; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 10px; }
 .budget-page h1 { font-size: clamp(2.4rem, 4vw, 3.25rem); letter-spacing: -.035em; line-height: 1.1; margin: 0 0 12px; }
 .budget-page .page-intro p { margin: 0; font-size: 1rem; }
+.budget-page .page-intro a { color: var(--budget-moss); text-underline-offset: 3px; }
 .budget-page .analytics-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--budget-line); border-radius: var(--budget-radius); background: var(--budget-paper); overflow: hidden; margin-bottom: 20px; }
 .budget-page .stat-card { border: 0; border-right: 1px solid var(--budget-line); border-radius: 0; padding: 22px 24px; min-height: 155px; background: transparent; }
 .budget-page .stat-card:last-child { border-right: 0; }
-.budget-page .stat-card h2 { font: 600 .8rem system-ui, sans-serif; color: var(--budget-muted); }
+.budget-page .stat-card h2 { font: 600 .8rem var(--font-site); color: var(--budget-muted); }
 .budget-page .stat-value { font-size: clamp(1.75rem, 2.5vw, 2.3rem); letter-spacing: -.04em; line-height: 1.2; margin: 12px 0 8px; }
 .budget-page .stat-description { font-size: .78rem; max-width: 28ch; }
 .budget-page .paycheque-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 20px 24px; margin: 0 0 36px; background: var(--budget-wash); border: 1px solid #c5d5ca; border-radius: var(--budget-radius); }
@@ -67,7 +68,7 @@
 .budget-page .item-content > button { margin-right: 8px; margin-bottom: 8px; }
 .budget-page .empty-state { text-align: center; padding: 28px 8px; }
 .empty-state-mark { display: grid; place-items: center; width: 40px; height: 40px; margin: 0 auto 18px; background: var(--budget-wash); border-radius: 50%; color: var(--budget-moss); font-size: 1.4rem; }
-.empty-state h4 { font: 400 1.2rem Georgia, serif; margin: 0 0 12px; }
+.empty-state h4 { font: 400 1.2rem var(--font-site); margin: 0 0 12px; }
 .empty-state p { color: var(--budget-muted); font-size: .85rem; line-height: 1.65; margin: 0 auto 22px; max-width: 30ch; }
 .budget-page .modal { border: 1px solid var(--budget-line); border-radius: 16px; padding: 28px; color: var(--budget-ink); }
 .budget-page .modal-heading { margin-bottom: 24px; }

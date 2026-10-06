@@ -4,7 +4,7 @@ export default function Home() {
       <p className="brand">A little clarity. A little progress.</p>
       <h1>Make room for the life you’re saving for.</h1>
       <p>MyBudgetPro brings your savings goals, debts, bills, and account balances into a calmer place. Start small and build a plan that makes sense to you.</p>
-      <div className="actions"><a className="button-link" href="#/budget">Start your budget</a><a className="text-link" href="#/budget-wrapped">Explore your spending →</a></div>
+      <div className="actions"><a className="button-link" href="#/dashboard">Open your dashboard</a><a className="text-link" href="#/budget">Start planning →</a></div>
     </div>
     <div className="feature-grid">
       <section><p className="brand">01 · PLAN</p><h2>Give your money a purpose</h2><p>Save for a trip, work toward a new car, pay down debt, and keep upcoming bills close by.</p><a href="#/budget">Go to Budget →</a></section>

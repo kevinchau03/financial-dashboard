@@ -1,19 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import useHash from './useHash'
+import { parseHash } from '../routing'
 
 export const pages = [
   { path: '#/', title: 'Home' },
+  { path: '#/dashboard', title: 'Dashboard' },
   { path: '#/budget', title: 'Budget' },
   { path: '#/accounts', title: 'Accounts' },
   { path: '#/budget-wrapped', title: 'Your Budget Wrapped' },
 ] as const
 
 export default function usePage() {
-  const [path, setPath] = useState(() => window.location.hash || '#/')
+  const hash = useHash()
+  const { path } = parseHash(hash)
   useEffect(() => {
-    const navigate = () => { setPath(window.location.hash || '#/'); window.scrollTo(0, 0) }
-    window.addEventListener('hashchange', navigate)
-    return () => window.removeEventListener('hashchange', navigate)
-  }, [])
+    window.scrollTo(0, 0)
+  }, [hash])
   useEffect(() => {
     document.title = `${pages.find(page => page.path === path)?.title ?? 'Page not found'} | MyBudgetPro`
     document.getElementById('main-content')?.focus({ preventScroll: true })

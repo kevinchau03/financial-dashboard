@@ -1,4 +1,7 @@
 export const amount = (value: string) => Number(value).toLocaleString(undefined, {
+  style: 'currency',
+  currency: 'CAD',
+  currencyDisplay: 'narrowSymbol',
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })

@@ -41,7 +41,7 @@ function PaymentForm({ bill, onSave, onCancel }: { bill: Bill; onSave: (bill: Bi
   </AppForm>
 }
 
-export default function Bills({ onChange }: { onChange: () => void }) {
+export default function Bills({ onChange = () => undefined }: { onChange?: () => void }) {
   const [currentDate, setCurrentDate] = useState(today)
   useEffect(() => {
     const refreshDate = () => setCurrentDate(today())

@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Date, Numeric, String, Text, ForeignKey
+from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -21,6 +21,46 @@ class Paycheque(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    received_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    allocated_cents: Mapped[int] = mapped_column(default=0, server_default='0')
+    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
+    request_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    allocations: Mapped[list['PaychequeAllocation']] = relationship(lazy='selectin', order_by='PaychequeAllocation.id')
+
+    @property
+    def allocated_amount(self) -> Decimal:
+        return (Decimal(self.allocated_cents) / 100).quantize(Decimal('.01'))
+
+    @property
+    def remaining_amount(self) -> Decimal:
+        return self.amount - self.allocated_amount
+
+
+class PaychequeAllocationBatch(Base):
+    __tablename__ = 'paycheque_allocation_batches'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    paycheque_id: Mapped[int] = mapped_column(ForeignKey('paycheques.id'), index=True)
+    request_id: Mapped[str] = mapped_column(String(36), unique=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+
+
+class PaychequeAllocation(Base):
+    __tablename__ = 'paycheque_allocations'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    paycheque_id: Mapped[int] = mapped_column(ForeignKey('paycheques.id'), index=True)
+    goal_id: Mapped[int | None] = mapped_column(ForeignKey('financial_goals.id', ondelete='SET NULL'), nullable=True)
+    debt_id: Mapped[int | None] = mapped_column(ForeignKey('debts.id', ondelete='SET NULL'), nullable=True)
+    kind: Mapped[str] = mapped_column(String(8))
+    name: Mapped[str] = mapped_column(String(120))
+    amount_cents: Mapped[int] = mapped_column()
+    status: Mapped[str] = mapped_column(String(12), default='planned')
+    completed_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    @property
+    def amount(self) -> Decimal:
+        return (Decimal(self.amount_cents) / 100).quantize(Decimal('.01'))
 
 
 class StatementImport(Base):
@@ -29,6 +69,7 @@ class StatementImport(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column(Text)
     content_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    csv_contents: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     imported_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
 

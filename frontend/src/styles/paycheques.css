@@ -1,0 +1,36 @@
+.budget-page .paycheque-card.paycheque-planner { display: block; }
+.budget-page .paycheque-planner .modal fieldset { display: flex; flex-direction: column; align-items: stretch; }
+.budget-page .paycheque-planner .modal label { font-size: .85rem; }
+.budget-page .modal .allocation-totals { position: sticky; top: 0; z-index: 1; }
+.budget-page .paycheque-planner > form { margin-bottom: 16px; }
+.budget-page .paycheque-planner .paycheque-overview { border-top: 1px solid var(--budget-line); padding-top: 20px; }
+.budget-page .paycheque-overview h2 { font-size: 1.1rem; margin: 0; }
+.budget-page .paycheque-overview .list-heading { margin-bottom: 16px; }
+.budget-page .allocation-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; padding: 16px; background: var(--budget-paper); border: 1px solid var(--budget-line); border-radius: var(--budget-radius); }
+.budget-page .allocation-totals small { display: block; color: var(--budget-muted); margin-bottom: 6px; }
+.budget-page .allocation-totals strong { display: block; font-size: 1.15rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.budget-page .allocation-over { color: var(--danger, #a13e2b); }
+.budget-page .plan-guidance { color: var(--budget-muted); font-size: .9rem; line-height: 1.6; }
+.budget-page .allocation-group h3 { font-size: 1rem; margin: 0 0 12px; }
+.budget-page .allocation-input { display: grid; grid-template-columns: minmax(0, 1fr) 130px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--budget-line); }
+.budget-page .allocation-input small, .budget-page .allocation-list small { display: block; color: var(--budget-muted); margin-top: 6px; font-weight: normal; }
+.budget-page .allocation-list, .budget-page .paycheque-history { padding: 0; list-style: none; }
+.budget-page .allocation-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; border-bottom: 1px solid var(--budget-line); padding: 16px 0; }
+.budget-page .allocation-list .actions { grid-column: 1 / -1; }
+.budget-page .allocation-list strong { overflow-wrap: anywhere; }
+.budget-page .paycheque-overview details { margin-top: 20px; }
+.budget-page .paycheque-history button { width: 100%; display: grid; text-align: left; gap: 6px; margin-bottom: 12px; }
+@media (max-width: 600px) {
+  .budget-page .paycheque-planner .list-heading { flex-wrap: wrap; }
+  .budget-page .allocation-totals { gap: 8px; padding: 12px; }
+  .budget-page .allocation-totals strong { font-size: 1rem; }
+  .budget-page .allocation-input { grid-template-columns: minmax(0, 1fr) 100px; }
+  .budget-page .allocation-list .actions { display: grid; }
+}
+@media (max-width: 420px) {
+  .budget-page .allocation-totals { grid-template-columns: 1fr; }
+  .budget-page .allocation-totals > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .budget-page .allocation-totals small { margin: 0; }
+  .budget-page .allocation-totals strong { white-space: nowrap; }
+  .budget-page .allocation-input { grid-template-columns: 1fr; gap: 10px; }
+}

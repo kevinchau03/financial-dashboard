@@ -32,6 +32,26 @@ Run frontend checks from `frontend/` with `npm run build` and `npm run lint`.
 
 Restart the backend to create the new tables in `backend/goals.db`. Uploading
 through Your Budget Wrapped saves TD transactions and displays the parsed rows.
+The import pipeline separates extraction, cleaning and loading:
+
+```python
+extracted = read_csv(contents, format='td')
+cleaned = clean_data(extracted)
+table = load_csv(cleaned, session, filename=filename, contents=contents)
+```
+
+`read_csv` extracts cells and keeps the first transaction of headerless TD files.
+`clean_data` skips blank rows, trims TD text, validates dates and all three amounts,
+and normalizes dates/money without changing the extracted data. Invalid financial
+rows reject the import rather than being silently dropped. Private date and amount
+helpers keep that validation in one place.
+`load_csv` maps cleaned data to recognized columns and saves TD statements through
+the existing transactional storage helper. Omit the session for a table preview.
+It produces the displayed four-column table:
+`Date`, `Transaction`, `Debit`, `Credit`. Dates use `YYYY-MM-DD`, amounts are
+two-decimal strings, and missing debits/credits are `None` (`null` in JSON).
+The original parsed CSV stays unchanged. Balance remains internal storage data
+and is not included in the displayed statement table.
 Earlier uploads must be uploaded again to save them. Generic CSV previews
 (`format=csv`) are still not saved.
 
@@ -52,8 +72,36 @@ SELECT COALESCE(SUM(debit_cents), 0)
 FROM transactions;
 ```
 
-It totals all saved debits, including transfers or fees listed as debits; credits
-are not subtracted. To call it from Python, run from the backend directory:
+It totals all saved debits when no statement ID is supplied, including transfers
+or fees listed as debits; credits are not subtracted. The upload endpoint passes
+the uploaded file's `statement_id` to all three analytics helpers, so the frontend
+shows only that statement's income, spending, and time range. Re-uploading an
+existing file selects its original statement without duplicating transactions.
+No combined-statement UI is implemented.
+
+Your Budget Wrapped now includes a saved-file library. `GET /api/statements`
+returns file metadata with `offset` and `limit` pagination (default 20, maximum
+100). `GET /api/statements/{id}` reopens that file's four-column table and summary.
+New uploads retain the original CSV bytes in `statement_imports.csv_contents`;
+`GET /api/statements/{id}/file` downloads them. Backend startup adds this nullable
+column to older databases without removing records. Older statements still reopen
+from their transactions; re-uploading the same CSV restores its original file.
+
+To query one statement's four columns using raw SQL:
+
+```sql
+SELECT date,
+       description AS "transaction",
+       debit_cents / 100.0 AS debit,
+       credit_cents / 100.0 AS credit
+FROM transactions
+WHERE statement_id = :statement_id
+ORDER BY id;
+```
+
+The existing `transactions` table owns the records; the IDs and balance column
+are internal bookkeeping, so a second table with duplicate data is unnecessary.
+To call the helper from Python, run from the backend directory:
 
 ```python
 from sqlalchemy.orm import Session
@@ -61,7 +109,7 @@ from database import engine
 from analytics import get_total_spent
 
 with Session(engine) as session:
-    print(get_total_spent(session))
+    print(get_total_spent(session, statement_id=1))
 ```
 
 ## Editing and payments
@@ -115,3 +163,33 @@ with Session(engine) as session:
   (newest first). Debts are fully paid when remaining amount is zero.
 - Interest rate is informational (0–100%, two decimals); no automatic interest accrual
   or lender integration is included. New tables are created on backend startup.
+
+## Paycheque plans
+
+The frontend Dashboard combines read-only summaries from existing account, goal,
+debt and bill endpoints. `GET /api/statements/{id}/summary` returns a single saved
+statement's `statement_id` and `stats` (income, spent, start/end dates) without its
+transaction rows. Missing statement IDs return 404. Account and goal balances are
+separate totals and statement imports are not consolidated across files.
+
+- `POST /api/paycheques` saves `amount`, `received_on` (defaults to today), optional
+  `request_id` UUID, and optional `allocations`: `{kind: "goal" | "debt", target_id,
+  amount}`. Received dates cannot be future dates. Amounts use two decimal places.
+- `GET /api/paycheques/latest`, `GET /api/paycheques/{id}`, and
+  `GET /api/paycheques?offset=0&limit=20` return saved paycheques with allocations,
+  allocated amount and remaining amount. Old paycheques retain unknown received dates.
+- `POST /api/paycheques/{id}/allocations` reserves more of the remaining amount;
+  requires a request UUID and at least one allocation. Unallocated income is allowed.
+  Pending debt allocations across paycheques cannot exceed the outstanding debt.
+- Plans do not change balances. `POST /api/paycheques/{id}/allocations/{allocation_id}/complete`
+  accepts `completed_on` between receipt and today. It adds actual goal savings or
+  records a debt payment atomically. Repeated completion never records money twice.
+- `POST /api/paycheques/{id}/allocations/{allocation_id}/cancel` releases a pending
+  allocation once. Completed entries cannot be cancelled. Deleting a target releases
+  its pending allocations and retains named completed/cancelled allocation history.
+- Creation and allocation UUIDs make retries idempotent; reusing a UUID with changed
+  details returns 409. Guarded integer-cent reservations prevent over-allocation.
+  If a debt was repaid elsewhere, completion fails without changing the plan;
+  cancel that pending allocation and allocate a smaller amount.
+- Startup adds the allocation tables and missing paycheque columns without clearing
+  existing data. These APIs use the prototype's shared database, like existing goals.

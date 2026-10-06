@@ -1,36 +1,39 @@
 from decimal import Decimal
-from datetime import date, datetime
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 # Analytics functions to query the database for totals and ranges from statements
 
-def get_total_spent(session: Session) -> Decimal:
-    """Sum debits across saved statements; credits are not subtracted."""
+def get_total_spent(session: Session, statement_id: int | None = None) -> Decimal:
+    """Sum one statement's debits, or all saved debits when no ID is supplied."""
     query = text("""
         SELECT COALESCE(SUM(debit_cents), 0)
         FROM transactions
+        WHERE (:statement_id IS NULL OR statement_id = :statement_id)
     """)
-    total_cents = session.execute(query).scalar_one()
+    total_cents = session.execute(query, {'statement_id': statement_id}).scalar_one()
     return (Decimal(total_cents) / 100).quantize(Decimal('0.01'))
 
-def get_total_income(session: Session) -> Decimal:
-    """Sum credits across saved statements; debits are not subtracted."""
+def get_total_income(session: Session, statement_id: int | None = None) -> Decimal:
+    """Sum one statement's credits, or all saved credits when no ID is supplied."""
     query = text("""
         SELECT COALESCE(SUM(credit_cents), 0)
         FROM transactions
+        WHERE (:statement_id IS NULL OR statement_id = :statement_id)
     """)
-    total_cents = session.execute(query).scalar_one()
+    total_cents = session.execute(query, {'statement_id': statement_id}).scalar_one()
     return (Decimal(total_cents) / 100).quantize(Decimal('0.01'))
 
-def get_time_range(session: Session) -> tuple[datetime | None, datetime | None]:
-    """Return the earliest and latest transaction dates across all saved statements."""
+def get_time_range(session: Session, statement_id: int | None = None) -> tuple[str | None, str | None]:
+    """Return one statement's date range, or all saved dates when no ID is supplied."""
     query = text("""
         SELECT MIN(date), MAX(date)
         FROM transactions
+        WHERE (:statement_id IS NULL OR statement_id = :statement_id)
     """)
-    return session.execute(query).one()
+    start_date, end_date = session.execute(query, {'statement_id': statement_id}).one()
+    return start_date, end_date
 
 
 # Helper functions to query the database for totals across financial goals, debts, and bills

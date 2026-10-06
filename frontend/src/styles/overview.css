@@ -1,0 +1,35 @@
+.overview-page { color: var(--budget-ink); }
+.overview-page .overview-intro { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 28px; }
+.overview-page h1 { font-size: clamp(2.4rem, 4vw, 3.25rem); letter-spacing: -.035em; margin: 0 0 12px; }
+.overview-page .overview-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--budget-paper); border: 1px solid var(--budget-line); border-radius: var(--budget-radius); overflow: hidden; }
+.overview-page .overview-metrics .stat-card { border: 0; border-right: 1px solid var(--budget-line); border-radius: 0; background: transparent; min-height: 160px; }
+.overview-page .overview-metrics .stat-card:last-child { border-right: 0; }
+.overview-page .stat-card h2 { font: 600 .85rem var(--font-site); color: var(--budget-muted); }
+.overview-page .overview-caption { color: var(--budget-muted); font-size: .85rem; line-height: 1.6; overflow-wrap: anywhere; }
+.overview-page .overview-balance-note { margin: 12px 0 28px; }
+.overview-page .overview-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
+.overview-page .overview-primary, .overview-page .overview-secondary { min-width: 0; }
+.overview-page .overview-progress-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.overview-page .overview-panel { border-radius: var(--budget-radius); min-width: 0; }
+.overview-page .overview-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.overview-page .overview-heading h2 { margin: 0; font-size: 1.45rem; }
+.overview-page a:not(.button-link) { color: var(--budget-moss); font-size: .85rem; text-underline-offset: 3px; }
+.overview-page .button-link { background: var(--budget-moss); min-height: 44px; border-radius: 7px; }
+.overview-page .overview-list, .overview-page .overview-progress-list { list-style: none; padding: 0; margin: 0; }
+.overview-page .overview-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-top: 1px solid var(--budget-line); }
+.overview-page .overview-list li > div { min-width: 0; }
+.overview-page li strong { overflow-wrap: anywhere; }
+.overview-page .overview-list li > strong { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.overview-page small { display: block; color: var(--budget-muted); margin-top: 6px; font-size: .8rem; }
+.overview-page .overview-progress-list li { padding: 16px 0; border-top: 1px solid var(--budget-line); }
+.overview-page .overview-progress-list p { margin: 8px 0; font-size: .85rem; }
+.overview-page .overview-progress-list progress { accent-color: var(--budget-moss); }
+.overview-page .overview-empty h3 { margin: 0 0 10px; font-size: 1.15rem; }
+.overview-page .overview-empty p { color: var(--budget-muted); font-size: .9rem; line-height: 1.6; }
+.overview-page .overview-alert { color: #a13e2b; background: var(--budget-wash); padding: 12px; border-radius: 7px; font-size: .85rem; }
+.overview-page .overview-spending-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.overview-page .overview-spending-stats .stat-card { padding: 12px; border: 0; border-radius: 7px; background: var(--budget-wash); }
+.overview-page .overview-spending-stats .stat-value { font-size: 1.35rem; }
+@media (max-width: 1200px) { .overview-page .overview-grid { grid-template-columns: 1fr; } .overview-page .overview-secondary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; } }
+@media (max-width: 760px) { .overview-page .overview-metrics, .overview-page .overview-progress-grid, .overview-page .overview-secondary { grid-template-columns: 1fr; } .overview-page .overview-metrics .stat-card { border-right: 0; border-bottom: 1px solid var(--budget-line); min-height: 140px; } .overview-page .overview-metrics .stat-card:last-child { border-bottom: 0; } }
+@media (max-width: 380px) { .overview-page .overview-spending-stats { grid-template-columns: 1fr; } .overview-page .overview-list li { flex-wrap: wrap; } }

@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 import main
 from analytics import get_total_spent
+from csv_import import clean_data, read_csv, load_csv
 from test_goals import client
 
 
@@ -11,9 +12,9 @@ def test_td_statement_preserves_first_transaction(client):
     data = b'09/24/2026,"Shop, Inc",2.39,,927.45\r\n09/23/2026,Payment,,50.00,925.06\r\n'
     response = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('statement.csv', data, 'text/csv')})
     assert response.status_code == 200
-    assert response.json()['headers'] == ['Date', 'Transaction', 'Debit', 'Credit', 'Balance']
+    assert response.json()['headers'] == ['Date', 'Transaction', 'Debit', 'Credit']
     assert response.json()['row_count'] == 2
-    assert response.json()['rows'] == [['09/24/2026', 'Shop, Inc', '2.39', '', '927.45'], ['09/23/2026', 'Payment', '', '50.00', '925.06']]
+    assert response.json()['rows'] == [['2026-09-24', 'Shop, Inc', '2.39', None], ['2026-09-23', 'Payment', None, '50.00']]
 
 
 @pytest.mark.parametrize('data', [b'', b'02/30/2026,Shop,1,,2', b'09/24/2026,Shop,1', b'09/24/2026,Shop,no,,2', b'09/24/2026,Shop,1,,'])
@@ -98,11 +99,55 @@ def test_saved_transactions_and_duplicate_upload(client):
     response = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('another.csv', b'09/27/2026,Other,1.25,,53.25')})
     assert response.status_code == 200
     assert response.json()['stats'] == {
-        'total_income': '50.00', 'total_spent': '1.55',
-        'start_date': '2026-09-24', 'end_date': '2026-09-27',
+        'total_income': '0.00', 'total_spent': '1.25',
+        'start_date': '2026-09-27', 'end_date': '2026-09-27',
     }
+    # Reopening the first upload still selects its own transactions and totals.
+    reopened = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('statement.csv', data)}).json()
+    assert reopened['statement_id'] == first['statement_id']
+    assert reopened['rows'] == first['rows']
+    assert reopened['stats'] == first['stats']
     with Session(main.engine) as session:
         assert get_total_spent(session) == Decimal('1.55')
+
+
+def test_clean_data_normalizes_one_statement_without_changing_input():
+    parsed = read_csv(b'\xef\xbb\xbf06/08/2026," Shop, Inc ","1,234.5",,2000\n2026-06-09,Refund,,0,2000', format='td')
+    original_rows = [row.copy() for row in parsed['rows']]
+    cleaned = clean_data(parsed)
+    assert cleaned['rows'][0] == ['2026-06-08', 'Shop, Inc', '1234.50', None, '2000.00']
+    assert load_csv(cleaned) == {
+        'headers': ['Date', 'Transaction', 'Debit', 'Credit'],
+        'rows': [
+            ['2026-06-08', 'Shop, Inc', '1234.50', None],
+            ['2026-06-09', 'Refund', None, '0.00'],
+        ],
+    }
+    assert parsed['rows'] == original_rows
+    assert len(parsed['headers']) == 5
+
+
+def test_read_extracts_invalid_td_cells_before_cleaning():
+    extracted = read_csv(b'2026-06-08,Shop,not-money,,100', format='td')
+    assert extracted['rows'][0][2] == 'not-money'
+    with pytest.raises(ValueError, match='Line 1: debit and credit'):
+        clean_data(extracted)
+
+
+def test_cleaning_skips_blank_rows_and_reports_original_csv_lines():
+    extracted = read_csv(b'\n2026-06-08,Shop,1,,100\n , , , , \n2026-06-09,Refund,,2,102', format='td')
+    cleaned = clean_data(extracted)
+    assert len(cleaned['rows']) == 2
+    assert cleaned['rows'][1][3] == '2.00'
+    malformed = read_csv(b'\n2026-06-08,Shop,1,,100\n2026-06-09,Refund,2', format='td')
+    with pytest.raises(ValueError, match='Line 3: expected 5 columns'):
+        clean_data(malformed)
+
+
+@pytest.mark.parametrize('money', ['0.001', 'NaN', 'Infinity', '1000000000'])
+def test_clean_data_rejects_invalid_money(money):
+    with pytest.raises(ValueError, match='debit and credit'):
+        clean_data({'rows': [['2026-06-08', 'Shop', money, '', '2']]})
 
 
 @pytest.mark.parametrize('amount', ['0.001', '1000000000', 'NaN', 'Infinity', '1e999999'])

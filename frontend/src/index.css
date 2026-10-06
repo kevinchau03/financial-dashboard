@@ -1,2 +1,9 @@
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 0; background: #f3efdf; color: #303f38; font-family: system-ui, sans-serif; line-height: 1.5; }
+:root { --font-site: 'Open Sans', system-ui, sans-serif; }
+:root {
+  --accent-leaf: #2f6447; --surface-leaf: #eaf3e4;
+  --accent-sky: #285f7b; --surface-sky: #e7f1f7;
+  --accent-sun: #805b18; --surface-sun: #fff2cf;
+  --accent-rose: #954a3b; --surface-rose: #faeae2;
+}
+body { margin: 0; min-width: 0; background: #f3efdf; color: #303f38; font-family: var(--font-site); line-height: 1.5; }

@@ -13,6 +13,10 @@ backend/*.db
 .env
 .env.*
 
+# agent files
+DESIGN.MD
+UX-CONTRACT.md
+
 # IDE
 .vscode/
 .idea/
