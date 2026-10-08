@@ -9,7 +9,7 @@ class Base(DeclarativeBase):
 
 
 engine = create_engine(
-    f"sqlite:///{Path(__file__).with_name('goals.db').as_posix()}",
+    f"sqlite:///{(Path(__file__).resolve().parent.parent / 'goals.db').as_posix()}",
     connect_args={"check_same_thread": False},
 )
 

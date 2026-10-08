@@ -1,21 +1,13 @@
-"""Store validated TD statement rows together in one database transaction."""
 from decimal import Decimal
 from datetime import date
 from hashlib import sha256
-
-from typing import Annotated
-from urllib.parse import quote
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from app.models import StatementImport, Transaction
+from app.services.analytics import get_total_income, get_total_spent, get_time_range
 
-from models import StatementImport, Transaction
-from database import get_session
-from analytics import get_total_income, get_total_spent, get_time_range
-
-router = APIRouter(prefix='/api/statements', tags=['statements'])
 
 
 def save_statement(session: Session, filename: str, contents: bytes, rows: list[list[str | None]]) -> dict:
@@ -53,10 +45,9 @@ def save_statement(session: Session, filename: str, contents: bytes, rows: list[
     return {'statement_id': statement.id, 'already_imported': False}
 
 
-@router.get('')
-def list_statements(session: Annotated[Session, Depends(get_session)],
-                    offset: Annotated[int, Query(ge=0)] = 0,
-                    limit: Annotated[int, Query(ge=1, le=100)] = 20):
+def list_statements(session: Session,
+                    offset: int = 0,
+                    limit: int = 20):
     records = session.execute(select(
         StatementImport.id, StatementImport.filename, StatementImport.imported_at,
         StatementImport.csv_contents.is_not(None),
@@ -82,8 +73,7 @@ def find_statement(session: Session, statement_id: int) -> StatementImport:
     return statement
 
 
-@router.get('/{statement_id}')
-def read_statement(statement_id: int, session: Annotated[Session, Depends(get_session)]):
+def read_statement(statement_id: int, session: Session):
     statement = find_statement(session, statement_id)
     transactions = session.scalars(select(Transaction).where(
         Transaction.statement_id == statement_id,
@@ -105,8 +95,7 @@ def read_statement(statement_id: int, session: Annotated[Session, Depends(get_se
     }
 
 
-@router.get('/{statement_id}/summary')
-def statement_summary(statement_id: int, session: Annotated[Session, Depends(get_session)]):
+def statement_summary(statement_id: int, session: Session):
     statement = find_statement(session, statement_id)
     start, end = get_time_range(session, statement_id)
     return {
@@ -117,12 +106,8 @@ def statement_summary(statement_id: int, session: Annotated[Session, Depends(get
     }
 
 
-@router.get('/{statement_id}/file')
-def download_statement(statement_id: int, session: Annotated[Session, Depends(get_session)]):
+def download_statement(statement_id: int, session: Session):
     statement = find_statement(session, statement_id)
     if statement.csv_contents is None:
         raise HTTPException(404, 'The original CSV was not retained for this older upload. Re-upload it to save the file.')
-    return Response(content=statement.csv_contents, media_type='text/csv', headers={
-        'Content-Disposition': f"attachment; filename*=UTF-8''{quote(statement.filename, safe='')}",
-        'X-Content-Type-Options': 'nosniff',
-    })
+    return statement

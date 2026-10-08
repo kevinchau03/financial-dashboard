@@ -4,7 +4,6 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from test_goals import client
 
 
 def target(client, kind):
@@ -140,7 +139,7 @@ def test_concurrent_reservation_and_completion(client):
 def test_legacy_paycheque_is_preserved_at_startup(client):
     from fastapi.testclient import TestClient
     from sqlalchemy import text
-    import main
+    from app import main
     # Reconstruct the previous table only in this test's disposable database.
     with main.engine.begin() as connection:
         connection.execute(text('DROP TABLE paycheques'))

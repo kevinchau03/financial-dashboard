@@ -2,8 +2,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-import main
-from test_goals import client
+from app import main
 
 
 @pytest.mark.parametrize('kind,payload,payment_table', [

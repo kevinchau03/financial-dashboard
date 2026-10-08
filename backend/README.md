@@ -1,10 +1,45 @@
-# Financial goals backend
+# MyBudgetPro backend
+
+## Folder structure
+
+```text
+backend/
+  app/
+    main.py           # FastAPI setup and router registration
+    startup.py        # Existing additive database compatibility upgrades
+    database.py       # SQLAlchemy engine, Base and session dependency
+    models.py         # Database tables and relationships
+    routers/          # HTTP endpoints grouped by feature
+    schemas/          # Request validation and response models by feature
+    services/         # Payment/allocation rules, CSV imports and analytics
+  tests/
+    conftest.py        # Shared isolated database/client fixture
+    test_*.py         # Feature regression tests
+  main.py             # Compatibility for the old main:app launch command
+  goals.db            # Existing local database; location is unchanged
+  pyproject.toml
+  uv.lock
+```
+
+Routers own HTTP parameters, status codes and responses. Simple CRUD remains
+in the routers; multi-step financial operations live in services and retain
+their existing transaction boundaries. Services share models and schemas
+without importing routers. CSV parsing and loading are in
+`app/services/csv_import.py`, statement persistence in
+`app/services/statements.py`, and raw SQL analytics in
+`app/services/analytics.py`. Shared payment response fields are defined in
+`app/schemas/bills.py` and reused by debt schemas.
+
+Run tests from `backend/` with `uv run pytest -q`. Tests use temporary databases,
+not `goals.db`. Moving `database.py` into `app/` does not relocate existing data.
+
+## Running locally
 
 From `backend/`, install dependencies and start the API:
 
 ```powershell
 uv sync
-uv run uvicorn main:app --reload
+uv run uvicorn app.main:app --reload
 ```
 
 In another terminal, from `frontend/`:
@@ -64,7 +99,7 @@ Each file is validated before saving, and its records commit together. An
 identical file, even renamed, is saved only once. Different files with overlapping
 transactions are not deduplicated. All records are shared; there are no user accounts.
 
-`get_total_spent(session)` in `analytics.py` runs this raw SQL and converts the
+`get_total_spent(session)` in `app/services/analytics.py` runs this raw SQL and converts the
 result from cents to a Decimal dollar amount:
 
 ```sql
@@ -105,8 +140,8 @@ To call the helper from Python, run from the backend directory:
 
 ```python
 from sqlalchemy.orm import Session
-from database import engine
-from analytics import get_total_spent
+from app.database import engine
+from app.services.analytics import get_total_spent
 
 with Session(engine) as session:
     print(get_total_spent(session, statement_id=1))

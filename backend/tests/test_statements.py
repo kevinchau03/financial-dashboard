@@ -2,9 +2,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-import main
-from models import StatementImport
-from test_goals import client
+from app import main
+from app.models import StatementImport
 
 
 def upload(client, contents, filename='statement.csv'):

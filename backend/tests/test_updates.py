@@ -4,8 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text, inspect
 
-import main
-from test_goals import client
+from app import main
 
 
 def test_edit_goal(client):

@@ -1,20 +1,14 @@
-"""Plan received income separately from recording actual savings and repayments."""
 from datetime import date
 from decimal import Decimal
 from hashlib import sha256
 import json
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import HTTPException
 from sqlalchemy import select, update, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from app.models import Paycheque, PaychequeAllocation, PaychequeAllocationBatch, FinancialGoal, Debts, DebtPayment
+from app.schemas.paycheques import AllocationCreate, PaychequeCreate, AllocationBatchCreate, AllocationComplete
 
-from database import get_session
-from models import Paycheque, PaychequeAllocation, PaychequeAllocationBatch, FinancialGoal, Debts, DebtPayment
-from schemas import PaychequeCreate, PaychequeRead, AllocationCreate, AllocationBatchCreate, AllocationComplete
-
-router = APIRouter(prefix='/api/paycheques', tags=['paycheques'])
 MAX_BALANCE = Decimal('999999999999.99')
 
 
@@ -63,24 +57,20 @@ def reserve(session: Session, paycheque_id: int, allocations: list[AllocationCre
         ))
 
 
-@router.get('/latest', response_model=PaychequeRead | None)
-def latest(session: Annotated[Session, Depends(get_session)]):
+def latest(session: Session):
     return session.scalar(select(Paycheque).order_by(Paycheque.id.desc()).limit(1))
 
 
-@router.get('', response_model=list[PaychequeRead])
-def history(session: Annotated[Session, Depends(get_session)],
-            offset: Annotated[int, Query(ge=0)] = 0, limit: Annotated[int, Query(ge=1, le=100)] = 20):
+def history(session: Session,
+            offset: int = 0, limit: int = 20):
     return session.scalars(select(Paycheque).order_by(Paycheque.id.desc()).offset(offset).limit(limit)).all()
 
 
-@router.get('/{paycheque_id}', response_model=PaychequeRead)
-def read(paycheque_id: int, session: Annotated[Session, Depends(get_session)]):
+def read(paycheque_id: int, session: Session):
     return get_paycheque(session, paycheque_id)
 
 
-@router.post('', response_model=PaychequeRead, status_code=201)
-def create(payload: PaychequeCreate, session: Annotated[Session, Depends(get_session)]):
+def create(payload: PaychequeCreate, session: Session):
     if payload.received_on > date.today():
         raise HTTPException(422, 'Received date cannot be in the future.')
     key = str(payload.request_id) if payload.request_id else None
@@ -114,8 +104,7 @@ def create(payload: PaychequeCreate, session: Annotated[Session, Depends(get_ses
         raise
 
 
-@router.post('/{paycheque_id}/allocations', response_model=PaychequeRead)
-def allocate(paycheque_id: int, payload: AllocationBatchCreate, session: Annotated[Session, Depends(get_session)]):
+def allocate(paycheque_id: int, payload: AllocationBatchCreate, session: Session):
     try:
         # Lock the parent before checking the retry key, including concurrent retries.
         session.execute(update(Paycheque).where(Paycheque.id == paycheque_id).values(allocated_cents=Paycheque.allocated_cents))
@@ -144,9 +133,8 @@ def find_allocation(session: Session, paycheque_id: int, allocation_id: int) -> 
     return allocation
 
 
-@router.post('/{paycheque_id}/allocations/{allocation_id}/complete', response_model=PaychequeRead)
 def complete(paycheque_id: int, allocation_id: int, payload: AllocationComplete,
-             session: Annotated[Session, Depends(get_session)]):
+             session: Session):
     try:
         session.execute(update(Paycheque).where(Paycheque.id == paycheque_id).values(allocated_cents=Paycheque.allocated_cents))
         paycheque = get_paycheque(session, paycheque_id)
@@ -184,8 +172,7 @@ def complete(paycheque_id: int, allocation_id: int, payload: AllocationComplete,
         raise
 
 
-@router.post('/{paycheque_id}/allocations/{allocation_id}/cancel', response_model=PaychequeRead)
-def cancel(paycheque_id: int, allocation_id: int, session: Annotated[Session, Depends(get_session)]):
+def cancel(paycheque_id: int, allocation_id: int, session: Session):
     try:
         session.execute(update(Paycheque).where(Paycheque.id == paycheque_id).values(allocated_cents=Paycheque.allocated_cents))
         allocation = find_allocation(session, paycheque_id, allocation_id)

@@ -1,4 +1,3 @@
-from test_goals import client  # noqa: F401 -- reuse the isolated database fixture
 import pytest
 
 

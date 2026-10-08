@@ -3,8 +3,7 @@ from datetime import date, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-import main
-from test_goals import client
+from app import main
 
 
 def test_debt_payment_history_and_edit(client):

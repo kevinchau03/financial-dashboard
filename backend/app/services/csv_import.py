@@ -105,6 +105,6 @@ def load_csv(data: dict, session: Session | None = None, *, filename: str | None
     if session is not None:
         if filename is None or contents is None:
             raise ValueError('Saving a statement requires its filename and original CSV bytes.')
-        from statements import save_statement
+        from app.services.statements import save_statement
         saved = save_statement(session, filename, contents, data['rows'])
     return {'headers': TD_HEADERS[:4], 'rows': [row[:4] for row in data['rows']], **saved}

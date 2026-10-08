@@ -1,4 +1,3 @@
-from test_goals import client
 
 
 def test_debt_and_bill_summaries(client):

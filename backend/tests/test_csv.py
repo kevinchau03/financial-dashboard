@@ -2,10 +2,9 @@ import pytest
 from decimal import Decimal
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-import main
-from analytics import get_total_spent
-from csv_import import clean_data, read_csv, load_csv
-from test_goals import client
+from app import main
+from app.services.analytics import get_total_spent
+from app.services.csv_import import clean_data, read_csv, load_csv
 
 
 def test_td_statement_preserves_first_transaction(client):

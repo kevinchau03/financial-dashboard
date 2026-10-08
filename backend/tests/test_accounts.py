@@ -1,5 +1,4 @@
 import pytest
-from test_goals import client
 
 
 def test_account_create_update_and_isolation(client):

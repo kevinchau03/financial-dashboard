@@ -1,5 +1,4 @@
 import pytest
-from test_goals import client
 
 
 def test_save_and_load_latest_paycheque(client):
