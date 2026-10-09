@@ -29,3 +29,5 @@ h1 { color: var(--accent-leaf); }
 .feature-grid > section:nth-child(3) { background: var(--surface-sky); border-top: 4px solid var(--accent-sky); }
 .wrapped-page > .page-intro h1 { color: var(--accent-sky); }
 @media (forced-colors: active) { .overview-page .overview-panel[data-tone] { background: Canvas; } }
+
+.budget-page .goal-account-label { display: block; margin-top: 4px; font-weight: 400; overflow-wrap: anywhere; }

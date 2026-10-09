@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class AllocationCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    kind: Literal['goal', 'debt']
+    kind: Literal['goal', 'debt', 'account']
     target_id: int = Field(gt=0)
     amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
 
@@ -23,10 +23,11 @@ class PaychequeCreate(BaseModel):
 class AllocationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
-    kind: Literal['goal', 'debt']
+    kind: Literal['goal', 'debt', 'account']
     name: str
     goal_id: int | None
     debt_id: int | None
+    account_id: int | None
     amount: Decimal
     status: Literal['planned', 'completed', 'cancelled']
     completed_on: date | None

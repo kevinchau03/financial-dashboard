@@ -3,7 +3,7 @@ import { useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { saveRecord } from '../api'
 
-export type Account = { id: number; name: string; account_type: string; balance: string }
+export type Account = { id: number; name: string; account_type: string; balance: string; earmarked_amount: string; available_amount: string; goal_summary: { id: number; name: string; current_amount: string; target_amount: string }[] }
 
 export default function AccountForm({ account, onSave, onBusy }: {
   account?: Account; onSave: (account: Account) => void; onBusy: (busy: boolean) => void

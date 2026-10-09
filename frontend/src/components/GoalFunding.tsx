@@ -35,11 +35,11 @@ export default function GoalFunding({ goal, onSave }: {
   return <AppForm className="contribution-form" onSubmit={submit} aria-label={`Update savings for ${goal.name}`}>
     <fieldset disabled={saving}>
 
-      <label htmlFor={`funding-${goal.id}`}>Add new savings</label>
-      <small>Record money you have actually saved toward this goal.</small>
+      <label htmlFor={`funding-${goal.id}`}>{goal.account_id ? 'Assign account money' : 'Add new savings'}</label>
+      <small>{goal.account_id ? 'Earmark money already in the linked account. Its balance stays unchanged.' : 'Record money you have actually saved toward this goal.'}</small>
       <div className="contribution-controls">
         <input id={`funding-${goal.id}`} type="number" required min="0.01" max={Math.max(0, limit / 100)} step="0.01" value={value} onChange={event => setValue(event.target.value)} placeholder="0.00" disabled={limit <= 0} />
-        <button type="submit" disabled={limit <= 0}>{saving ? 'Saving…' : 'Add savings'}</button>
+        <button type="submit" disabled={limit <= 0}>{saving ? 'Saving…' : goal.account_id ? 'Assign amount' : 'Add savings'}</button>
       </div>
       {remaining > 0 && limit > 0 && <button type="button" className="secondary" onClick={() => setValue((Math.min(remaining, limit) / 100).toFixed(2))}>
         Fill remaining target

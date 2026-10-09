@@ -42,3 +42,8 @@ def complete(paycheque_id: int, allocation_id: int, payload: AllocationComplete,
 @router.post('/{paycheque_id}/allocations/{allocation_id}/cancel', response_model=PaychequeRead)
 def cancel(paycheque_id: int, allocation_id: int, session: Annotated[Session, Depends(get_session)]):
     return paycheques.cancel(paycheque_id=paycheque_id, allocation_id=allocation_id, session=session)
+
+
+@router.delete('/{paycheque_id}', status_code=204)
+def delete_paycheque(paycheque_id: int, session: Annotated[Session, Depends(get_session)]):
+    paycheques.remove(paycheque_id, session)

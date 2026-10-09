@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { amount, saveRecord, today } from '../api'
 import type { Goal, Debt } from '../types'
+import type { Account } from './AccountForm'
 import type { PaychequeRecord } from '../paychequeTypes'
 import Modal from './Modal'
 import AppForm from './AppForm'
@@ -10,7 +11,7 @@ export default function PaychequePlan({ existing, initialAmount, onSave, onClose
 }) {
   const [value, setValue] = useState(initialAmount)
   const [date, setDate] = useState(today())
-  const [targets, setTargets] = useState<{ kind: 'goal' | 'debt'; id: number; name: string; detail: string; max: string }[]>([])
+  const [targets, setTargets] = useState<{ kind: 'goal' | 'debt' | 'account'; id: number; name: string; detail: string; max: string }[]>([])
   const [entries, setEntries] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -22,12 +23,13 @@ export default function PaychequePlan({ existing, initialAmount, onSave, onClose
     const controller = new AbortController()
     async function load() {
       try {
-        const responses = await Promise.all(['/api/goals', '/api/debts'].map(url => fetch(url, { signal: controller.signal })))
-        if (responses.some(response => !response.ok)) throw new Error('Unable to load goals and debts. Please retry.')
-        const [goals, debts] = await Promise.all(responses.map(response => response.json())) as [Goal[], Debt[]]
+        const responses = await Promise.all(['/api/goals', '/api/debts', '/api/accounts'].map(url => fetch(url, { signal: controller.signal })))
+        if (responses.some(response => !response.ok)) throw new Error('Unable to load goals, debts and accounts. Please retry.')
+        const [goals, debts, accounts] = await Promise.all(responses.map(response => response.json())) as [Goal[], Debt[], Account[]]
         if (!controller.signal.aborted) setTargets([
-          ...goals.map(goal => ({ kind: 'goal' as const, id: goal.id, name: goal.name, detail: `${amount(goal.current_amount)} saved of ${amount(goal.target_amount)}`, max: '999999999999.99' })),
+          ...goals.map(goal => ({ kind: 'goal' as const, id: goal.id, name: goal.name, detail: `${amount(goal.current_amount)} saved of ${amount(goal.target_amount)}${goal.account_name ? ` - Deposit into ${goal.account_name}` : ''}`, max: '999999999999.99' })),
           ...debts.filter(debt => Number(debt.remaining_amount) > 0).map(debt => ({ kind: 'debt' as const, id: debt.id, name: debt.name, detail: `${amount(debt.remaining_amount)} remaining`, max: debt.remaining_amount })),
+          ...accounts.map(account => ({ kind: 'account' as const, id: account.id, name: account.name, detail: `${account.account_type} · ${amount(account.balance)} recorded balance`, max: '999999999999.99' })),
         ])
       } catch (error) { if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'Unable to load your targets.') }
       finally { if (!controller.signal.aborted) setLoading(false) }
@@ -38,8 +40,8 @@ export default function PaychequePlan({ existing, initialAmount, onSave, onClose
   const available = Math.round(Number(existing?.remaining_amount ?? value) * 100)
   const left = available - total
   return <Modal title={existing ? 'Allocate more' : 'Plan your paycheque'} busy={saving} onClose={onClose}>
-    <p className="plan-guidance">Give your paycheque a purpose. These are plans: record savings or payments after you make them. Leave some aside for bills and everyday spending.</p>
-    {loading && <p role="status">Loading your goals and debts…</p>}
+    <p className="plan-guidance">Give your paycheque a purpose. These are plans: record savings or payments after you make them. Leave some aside for bills and everyday spending. Accounts track where money is kept; goals track its purpose. Allocate each dollar once: a linked goal deposit updates its account and goal together. Do not also allocate that deposit to the account.</p>
+    {loading && <p role="status">Loading your goals, debts and accounts…</p>}
     {loadError && <div role="alert"><p>{loadError}</p><button type="button" className="secondary" onClick={() => { setLoading(true); setLoadError(''); setRetry(previous => previous + 1) }}>Retry</button></div>}
     {!loading && !loadError && <AppForm onSubmit={async event => {
       event.preventDefault()
@@ -71,9 +73,9 @@ export default function PaychequePlan({ existing, initialAmount, onSave, onClose
           <div><small>This plan</small><strong>{amount(String(total / 100))}</strong></div>
           <div><small>Left to allocate</small><strong className={left < 0 ? 'allocation-over' : ''}>{amount(String(left / 100))}</strong></div>
         </div>
-        {!loading && !loadError && targets.length === 0 && <p>You have no goals or unpaid debts yet. Save this paycheque now and allocate it after adding a goal or debt.</p>}
-        {(['goal', 'debt'] as const).map(kind => targets.some(target => target.kind === kind) && <section key={kind} className="allocation-group">
-          <h3>{kind === 'goal' ? 'Grow your goals' : 'Tackle your debts'}</h3>
+        {!loading && !loadError && targets.length === 0 && <p>You have no goals, unpaid debts or accounts yet. Save this paycheque now and allocate it after adding one.</p>}
+        {(['goal', 'debt', 'account'] as const).map(kind => targets.some(target => target.kind === kind) && <section key={kind} className="allocation-group">
+          <h3>{kind === 'goal' ? 'Grow your goals' : kind === 'debt' ? 'Tackle your debts' : 'Build your accounts'}</h3>
           {targets.filter(target => target.kind === kind).map(target => {
             const id = `${kind}-${target.id}`
             return <label key={id} className="allocation-input"><span><strong>{target.name}</strong><small>{target.detail}</small></span>

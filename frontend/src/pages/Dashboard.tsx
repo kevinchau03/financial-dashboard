@@ -21,8 +21,9 @@ export default function Dashboard() {
     <div className="page-intro overview-intro"><div><span className="budget-eyebrow">Your money, at a glance</span><h1>Your dashboard</h1><p>See where you stand, then give your next paycheque a purpose.</p></div><a className="button-link" href="#/budget">Plan your budget</a></div>
     <div className="overview-metrics">
       <StatCard tone="sky" title="Account balances" value={amount(sumAmounts((accounts.data ?? []).map(account => account.balance)))} description="Manually recorded across your accounts." loading={accounts.loading} error={accounts.error} onRetry={accounts.retry} />
-      <StatCard tone="leaf" title="Goal savings" value={amount(sumAmounts((goals.data ?? []).map(goal => goal.current_amount)))} description="Recorded savings. Planned allocations are excluded." loading={goals.loading} error={goals.error} onRetry={goals.retry} />
-      <StatCard tone="rose" title="Remaining debt" value={amount(sumAmounts((debts.data ?? []).map(debt => debt.remaining_amount)))} description="The outstanding balance of tracked debts." loading={debts.loading} error={debts.error} onRetry={debts.retry} />
+      <StatCard tone="leaf" title="Total saved" value={amount(sumAmounts((goals.data ?? []).map(goal => goal.current_amount)))} description="Recorded savings. Planned allocations are excluded." loading={goals.loading} error={goals.error} onRetry={goals.retry} />
+      <StatCard tone="rose" title="Total debt" value={amount(sumAmounts((debts.data ?? []).map(debt => debt.remaining_amount)))} description="The outstanding balance of tracked debts." loading={debts.loading} error={debts.error} onRetry={debts.retry} />
+      <StatCard tone="sun" title="Total bills" value={amount(sumAmounts((bills.data ?? []).map(bill => bill.amount)))} description="All recorded bill amounts, including paid bills. Not a monthly projection." loading={bills.loading} error={bills.error} onRetry={bills.retry} />
     </div>
     <p className="overview-caption overview-balance-note">Account balances and goal savings are tracked separately and may represent the same money. They are not added together.</p>
     <div className="overview-grid">

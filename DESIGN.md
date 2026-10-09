@@ -45,13 +45,13 @@ components:
   debt-card: { backgroundColor: "{colors.rose-surface}", textColor: "{colors.rose-accent}" }
 ---
 
-Paycheque planning extends the Budget page's cream and moss palette. Keep entry compact, use a modal for the allocation worksheet, show three calm numeric totals and group targets into goals and debts. Use explicit Planned and Recorded labels instead of showing projected progress as actual savings. History stays behind a button and allocation details are collapsible. Reuse the shared form, dialog, notice, focus and scrollbar patterns; retain native date selection. Narrow screens keep amount fields readable without horizontal overflow.
+Paycheque planning extends the Budget page's cream and moss palette. Keep entry compact, use a modal for the allocation worksheet, show three calm numeric totals and group targets into goals, debts and accounts. Use explicit Planned and Recorded labels instead of showing projected progress as actual savings. History stays behind a button and allocation details are collapsible. Reuse the shared form, dialog, notice, focus and scrollbar patterns; retain native date selection. Narrow screens keep amount fields readable without horizontal overflow.
 
 # MyBudgetPro Design System
 
 ## Overview
 
-The Budget workspace carries the existing Howl's Moving Castle inspired cream and green identity through a quiet paper-and-ledger composition. This is a product interface for recording savings, debt repayments and bill reminders. English is the current UI language; existing currency formatting remains owned by `frontend/src/api.ts`. No new market, payment processing or account allocation rules are introduced.
+The Budget workspace carries the existing Howl's Moving Castle inspired cream and green identity through a quiet paper-and-ledger composition. This is a product interface for recording savings, debt repayments and bill reminders. English is the current UI language; existing currency formatting remains owned by `frontend/src/api.ts`. The app records financial activity and does not process payments or move money.
 
 The signature is a soft sky paycheque strip above the management lists. Goals and debts have the strongest action hierarchy; bills are supporting reminders. The landing page keeps its separate marketing composition.
 
@@ -71,7 +71,7 @@ Open Sans carries headings, controls, body text and financial values across the 
 
 The desktop sidebar uses a compact 190px width, 18px header spacing and 4px navigation gaps. Links retain 44px minimum height and readable text; mobile keeps the existing two-column navigation with tighter outer padding.
 
-Dashboard is a compact financial overview using the same cream, moss and sky theme. Three separate totals anchor account balances, goal savings and remaining debt. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Below 1200px the secondary panels follow the primary area, and narrow layouts stack naturally. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs enter Dashboard while the explicit landing route remains available through the brand.
+Dashboard is a compact financial overview using the same cream, moss and sky theme. Four separate totals show account balances, total goal savings, remaining debt and all recorded bill amounts. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Below 1200px the secondary panels follow the primary area, and narrow layouts stack naturally. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs enter Dashboard while the explicit landing route remains available through the brand.
 
 The existing full-width sidebar shell remains. Content container breakpoints at 1100, 820 and 580px account for the actual available width. Above 1100px, two primary columns sit beside a 290px bills panel. Below that, bills follow goals and debts; below 580px the primary columns and summary ledger stack. The page owns natural document scrolling. No page height or overflow lock is added. Modal content scrolls within its established viewport limit.
 
@@ -107,3 +107,13 @@ new palette or typography. File names wrap, and document scrolling remains natur
 - Don't change business rules through visual styling.
 - Don't use hover as the only route to details.
 - Don't give every region equally strong borders, headings and action emphasis.
+
+Paycheque allocation now includes accounts using the existing grouped numeric fields and record dialog. Account deposits update recorded balances only when completed; linked goal deposits update the account and earmarked goal together; each dollar is allocated once. Paycheque deletion uses DeleteItem confirmation, removing its plans/history while preserving completed savings, balances and payments. Policy source: backend/app/services/paycheques.py.
+
+Account-backed goals: GoalAccountSelect reuses native select, AppForm and existing feedback. Optional links preserve older goals. Linked current_amount earmarks existing account money; direct goal additions assign existing funds and cannot exceed the account balance. Paycheque completion records a new deposit in both linked goal and account atomically. Account balance edits cannot reduce the balance below earmarked funds. Unlinking/deleting a goal releases its earmark without changing account balance. Source: backend/app/services/goals.py and backend/app/services/paycheques.py.
+
+Goal card summaries show the linked account, or No linked account, without expansion. Paid-off debts reuse DeleteItem with a Resolve debt variant and explicit payment-history deletion confirmation. The backend rechecks zero remaining balance before resolution. Source: backend/app/routers/debts.py.
+
+CollapsibleItem supports an optional cardAction outside the details disclosure. Paid-off debts show Resolve debt there even while collapsed, with the same DeleteItem confirmation and backend balance guard.
+
+Dashboard summary cards reuse StatCard and the existing abortable resources. Total saved sums goal current amounts without adding account balances; Total debt sums remaining balances; Total bills sums all recorded bill amounts including paid bills and is explicitly not a monthly projection. Summary cards use four columns on wide screens, two on intermediate widths and one on mobile.

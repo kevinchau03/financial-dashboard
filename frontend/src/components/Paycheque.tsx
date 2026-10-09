@@ -7,6 +7,7 @@ import useNotice from '../hooks/useNotice'
 import PaychequePlan from './PaychequePlan'
 import PaychequeAllocations from './PaychequeAllocations'
 import PaychequeHistory from './PaychequeHistory'
+import DeleteItem from './DeleteItem'
 import '../styles/paycheques.css'
 
 export default function Paycheque({ onCompleted }: { onCompleted: () => void }) {
@@ -39,11 +40,11 @@ export default function Paycheque({ onCompleted }: { onCompleted: () => void }) 
     </AppForm>
     {loading && <p role="status">Loading paycheque…</p>}
     {error && <div role="alert"><p>{error}</p><button type="button" className="secondary" onClick={() => { setLoading(true); setError(''); setRetry(previous => previous + 1) }}>Retry</button></div>}
-    {!loading && !error && !saved && <p className="plan-guidance">Start with your take-home pay, then choose what goes toward savings and debt. You can leave money unallocated.</p>}
+    {!loading && !error && !saved && <p className="plan-guidance">Start with your take-home pay, then choose what goes toward goals, debts and accounts. You can leave money unallocated.</p>}
     {saved && <div className="paycheque-overview">
       <div className="list-heading"><div><h2>Paycheque #{saved.id}</h2><p>{saved.received_on ?? 'Received date not recorded'}</p></div><button type="button" className="secondary" onClick={() => setModal('history')}>Paycheque history</button></div>
       <div className="allocation-totals"><div><small>Received</small><strong>{amount(saved.amount)}</strong></div><div><small>Allocated</small><strong>{amount(saved.allocated_amount)}</strong></div><div><small>Left to allocate</small><strong>{amount(saved.remaining_amount)}</strong></div></div>
-      <div className="actions"><button type="button" disabled={Number(saved.remaining_amount) <= 0} onClick={() => setModal('more')}>Allocate more</button><small>Allocations stay planned until you record them as saved or paid.</small></div>
+      <div className="actions"><button type="button" disabled={Number(saved.remaining_amount) <= 0} onClick={() => setModal('more')}>Allocate more</button><small>Allocations stay planned until you record them as saved, paid or deposited.</small><DeleteItem kind="paycheques" id={saved.id} name={`Paycheque #${saved.id}`} onDelete={() => { setSaved(null); setLoading(true); setError(''); setRetry(previous => previous + 1); setNotice('Paycheque deleted. Recorded balances and payments were kept.') }} /></div>
       {saved.allocations.length > 0 && <details key={saved.id} open={saved.allocations.some(item => item.status === 'planned')}><summary>Your allocations ({saved.allocations.filter(item => item.status === 'planned').length} planned)</summary><PaychequeAllocations pay={saved} onSave={setSaved} onCompleted={() => { onCompleted(); setNotice('Recorded. Your progress is up to date.') }} /></details>}
     </div>}
     <Notice message={notice} />

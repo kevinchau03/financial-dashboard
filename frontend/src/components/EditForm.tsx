@@ -1,4 +1,5 @@
 import AutoTextarea from './AutoTextarea'
+import GoalAccountSelect from './GoalAccountSelect'
 import AppForm from './AppForm'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
@@ -20,7 +21,7 @@ export default function EditForm({ item, kind, onSave, onCancel }: {
         name: String(data.get('name')).trim(),
         due_date: data.get('due_date') || null,
         description: String(data.get('description')).trim() || null,
-        ...(kind === 'goals' ? { target_amount: data.get('target_amount') }
+        ...(kind === 'goals' ? { target_amount: data.get('target_amount'), ...(data.has('account_id') ? { account_id: data.get('account_id') ? Number(data.get('account_id')) : null } : {}) }
           : { amount: data.get('amount'), recurring: data.get('recurring') === 'on' }),
       })
       onSave(updated)
@@ -31,6 +32,7 @@ export default function EditForm({ item, kind, onSave, onCancel }: {
   return <AppForm className="inline-form" onSubmit={submit} aria-label={`Edit ${item.name}`}>
     <fieldset disabled={saving}>
       <label>Name<input name="name" required maxLength={120} defaultValue={item.name} autoFocus /></label>
+      {'target_amount' in item && <GoalAccountSelect accountId={item.account_id} />}
       {'target_amount' in item ? <div className="amount-fields">
         <label>Target amount<input name="target_amount" type="number" min="0.01" max="999999999999.99" step="0.01" required defaultValue={item.target_amount} /></label>
       </div> : <>

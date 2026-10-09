@@ -228,3 +228,9 @@ separate totals and statement imports are not consolidated across files.
   cancel that pending allocation and allocate a smaller amount.
 - Startup adds the allocation tables and missing paycheque columns without clearing
   existing data. These APIs use the prototype's shared database, like existing goals.
+
+## Paycheque accounts and deletion
+
+Allocations accept `kind: account` with an account ID. Completing an account allocation increases its recorded balance atomically and is idempotent. It does not update a savings goal or transfer money. Do not allocate the same money to both a goal and an account. Startup adds nullable `account_id` to existing allocation tables without replacing data. `DELETE /api/paycheques/{id}` removes the paycheque, allocations and retry batches; completed goal contributions, account balances and debt payments are retained.
+
+Account-backed goals: GoalAccountSelect reuses native select, AppForm and existing feedback. Optional links preserve older goals. Linked current_amount earmarks existing account money; direct goal additions assign existing funds and cannot exceed the account balance. Paycheque completion records a new deposit in both linked goal and account atomically. Account balance edits cannot reduce the balance below earmarked funds. Unlinking/deleting a goal releases its earmark without changing account balance. Source: backend/app/services/goals.py and backend/app/services/paycheques.py.

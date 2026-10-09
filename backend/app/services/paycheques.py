@@ -3,10 +3,10 @@ from decimal import Decimal
 from hashlib import sha256
 import json
 from fastapi import HTTPException
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.models import Paycheque, PaychequeAllocation, PaychequeAllocationBatch, FinancialGoal, Debts, DebtPayment
+from app.models import Account, Paycheque, PaychequeAllocation, PaychequeAllocationBatch, FinancialGoal, Debts, DebtPayment
 from app.schemas.paycheques import AllocationCreate, PaychequeCreate, AllocationBatchCreate, AllocationComplete
 
 MAX_BALANCE = Decimal('999999999999.99')
@@ -27,7 +27,7 @@ def get_paycheque(session: Session, paycheque_id: int) -> Paycheque:
 
 def reserve(session: Session, paycheque_id: int, allocations: list[AllocationCreate]):
     if len({(item.kind, item.target_id) for item in allocations}) != len(allocations):
-        raise HTTPException(422, 'Use one allocation per goal or debt in this plan.')
+        raise HTTPException(422, 'Use one allocation per goal, debt or account in this plan.')
     total = sum(int(item.amount * 100) for item in allocations)
     amount_cents = int(get_paycheque(session, paycheque_id).amount * 100)
     result = session.execute(update(Paycheque).where(
@@ -39,7 +39,7 @@ def reserve(session: Session, paycheque_id: int, allocations: list[AllocationCre
         raise HTTPException(422, 'These allocations exceed the amount left in this paycheque.')
     # The parent write serializes reservations in SQLite before checking targets.
     for item in allocations:
-        model = FinancialGoal if item.kind == 'goal' else Debts
+        model = {'goal': FinancialGoal, 'debt': Debts, 'account': Account}[item.kind]
         target = session.get(model, item.target_id)
         if target is None:
             raise HTTPException(404, f'This {item.kind} no longer exists. Refresh your plan.')
@@ -53,6 +53,7 @@ def reserve(session: Session, paycheque_id: int, allocations: list[AllocationCre
             paycheque_id=paycheque_id, kind=item.kind, name=target.name,
             goal_id=target.id if item.kind == 'goal' else None,
             debt_id=target.id if item.kind == 'debt' else None,
+            account_id=target.id if item.kind == 'account' else None,
             amount_cents=int(item.amount * 100),
         ))
 
@@ -151,11 +152,24 @@ def complete(paycheque_id: int, allocation_id: int, payload: AllocationComplete,
             raise HTTPException(409, 'This allocation has been cancelled.')
         money = allocation.amount
         if allocation.kind == 'goal':
+            goal = session.get(FinancialGoal, allocation.goal_id)
+            if goal is not None and goal.account_id is not None:
+                deposit = session.execute(update(Account).where(
+                    Account.id == goal.account_id, Account.balance <= MAX_BALANCE - money,
+                ).values(balance=func.round(Account.balance + money, 2)))
+                if deposit.rowcount == 0:
+                    raise HTTPException(422, 'The linked account is unavailable or its balance would exceed the supported limit.')
             result = session.execute(update(FinancialGoal).where(
                 FinancialGoal.id == allocation.goal_id, FinancialGoal.current_amount <= MAX_BALANCE - money,
             ).values(current_amount=func.round(FinancialGoal.current_amount + money, 2)))
             if result.rowcount == 0:
                 raise HTTPException(422, 'The goal is unavailable or this addition would exceed the supported balance. Cancel the allocation to release its money.')
+        elif allocation.kind == 'account':
+            result = session.execute(update(Account).where(
+                Account.id == allocation.account_id, Account.balance <= MAX_BALANCE - money,
+            ).values(balance=func.round(Account.balance + money, 2)))
+            if result.rowcount == 0:
+                raise HTTPException(422, 'The account is unavailable or this addition would exceed the supported balance. Cancel the allocation to release its money.')
         else:
             result = session.execute(update(Debts).where(
                 Debts.id == allocation.debt_id,
@@ -193,7 +207,7 @@ def cancel(paycheque_id: int, allocation_id: int, session: Session):
 
 def detach_target(session: Session, kind: str, target_id: int):
     """Release pending plans on deletion while retaining named allocation history."""
-    column = PaychequeAllocation.goal_id if kind == 'goal' else PaychequeAllocation.debt_id
+    column = {'goal': PaychequeAllocation.goal_id, 'debt': PaychequeAllocation.debt_id, 'account': PaychequeAllocation.account_id}[kind]
     session.execute(update(PaychequeAllocation).where(column == target_id).values(status=PaychequeAllocation.status))
     planned = session.execute(select(PaychequeAllocation.paycheque_id, func.sum(PaychequeAllocation.amount_cents)).where(
         column == target_id, PaychequeAllocation.status == 'planned',
@@ -202,3 +216,18 @@ def detach_target(session: Session, kind: str, target_id: int):
         session.execute(update(Paycheque).where(Paycheque.id == paycheque_id).values(allocated_cents=Paycheque.allocated_cents - cents))
     session.execute(update(PaychequeAllocation).where(column == target_id, PaychequeAllocation.status == 'planned').values(status='cancelled'))
     session.execute(update(PaychequeAllocation).where(column == target_id).values({column.key: None}))
+
+
+def remove(paycheque_id: int, session: Session):
+    """Delete the plan while preserving completed balances and payment records."""
+    try:
+        session.execute(update(Paycheque).where(Paycheque.id == paycheque_id)
+                        .values(allocated_cents=Paycheque.allocated_cents))
+        get_paycheque(session, paycheque_id)
+        session.execute(delete(PaychequeAllocationBatch).where(PaychequeAllocationBatch.paycheque_id == paycheque_id))
+        session.execute(delete(PaychequeAllocation).where(PaychequeAllocation.paycheque_id == paycheque_id))
+        session.execute(delete(Paycheque).where(Paycheque.id == paycheque_id))
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise

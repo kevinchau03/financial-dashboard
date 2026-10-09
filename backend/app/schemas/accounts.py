@@ -11,3 +11,6 @@ class AccountInput(BaseModel):
 class AccountRead(AccountInput):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    earmarked_amount: Decimal
+    available_amount: Decimal
+    goal_summary: list[dict]

@@ -21,7 +21,7 @@ def test_create_and_persist_goal(client):
     response = client.post('/api/goals', json=payload)
     assert response.status_code == 201
     saved = response.json()
-    assert saved == {**payload, 'name': 'Emergency fund', 'id': saved['id']}
+    assert saved == {**payload, 'name': 'Emergency fund', 'id': saved['id'], 'account_id': None, 'account_name': None}
     # A fresh application lifecycle and DB session must still see the saved goal.
     with TestClient(main.app) as restarted:
         assert restarted.get('/api/goals').json() == [saved]

@@ -1,5 +1,5 @@
 export type Allocation = {
-  id: number; kind: 'goal' | 'debt'; name: string; amount: string
+  id: number; kind: 'goal' | 'debt' | 'account'; name: string; amount: string
   status: 'planned' | 'completed' | 'cancelled'; completed_on: string | null
 }
 export type PaychequeRecord = {

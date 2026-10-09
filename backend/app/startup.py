@@ -6,6 +6,12 @@ from app import models  # Register all tables before creating metadata.
 
 def initialize_database(engine):
     Base.metadata.create_all(engine)
+    if 'account_id' not in {column['name'] for column in inspect(engine).get_columns('financial_goals')}:
+        with engine.begin() as connection:
+            connection.execute(text('ALTER TABLE financial_goals ADD COLUMN account_id INTEGER REFERENCES accounts(id)'))
+    if 'account_id' not in {column['name'] for column in inspect(engine).get_columns('paycheque_allocations')}:
+        with engine.begin() as connection:
+            connection.execute(text('ALTER TABLE paycheque_allocations ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL'))
     paycheque_columns = {column['name'] for column in inspect(engine).get_columns('paycheques')}
     with engine.begin() as connection:
         for name, definition in {'received_on': 'DATE', 'allocated_cents': 'INTEGER NOT NULL DEFAULT 0',

@@ -3,6 +3,8 @@ export type CardTone = 'sky' | 'leaf' | 'sun' | 'rose'
 export type Goal = {
   id: number
   name: string
+  account_id: number | null
+  account_name: string | null
   target_amount: string
   current_amount: string
   due_date: string | null

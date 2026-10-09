@@ -12,7 +12,14 @@ from app.schemas.debts import DebtCreate, DebtRead, DebtUpdate, DebtPaymentCreat
 router = APIRouter(tags=['debts'])
 
 @router.delete("/api/debts/{item_id}", status_code=204)
-def delete_debt(item_id: int, session: Annotated[Session, Depends(get_session)]):
+def delete_debt(item_id: int, session: Annotated[Session, Depends(get_session)], resolve: bool = False):
+    if resolve:
+        # Acquire the write lock before checking the current balance.
+        session.execute(update(Debts).where(Debts.id == item_id).values(amount=Debts.amount))
+        debt = get_or_404(session, Debts, item_id)
+        session.refresh(debt)
+        if debt.remaining_amount != 0:
+            raise HTTPException(409, 'This debt still has a remaining balance. Refresh it before resolving.')
     detach_target(session, 'debt', item_id)
     session.delete(get_or_404(session, Debts, item_id))
     session.commit()

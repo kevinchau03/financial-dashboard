@@ -32,13 +32,16 @@ export default function Accounts() {
   }, [attempt])
   return <div className="accounts-page">
     <div className="page-intro list-heading"><div><h1>Your accounts</h1><p>A simple view of where your money lives.</p></div><button type="button" disabled={loading || !!error} onClick={() => setEditing('new')}>Add account</button></div>
-    <p className="wrapped-intro">Manually tracked balances. These are separate from your budget goals and statement imports; changes here do not move or allocate money.</p>
+    <p className="wrapped-intro">Manually tracked balances. Linked goals earmark portions of these balances. Unassigned money is available for another goal. Changes here do not move money.</p>
     <Notice message={notice} />
     {loading && <p role="status">Loading accounts…</p>}
     {error && <div><p role="alert">{error}</p><button type="button" onClick={() => setAttempt(previous => previous + 1)}>Retry</button></div>}
     {!loading && !error && accounts.length === 0 && <section><h2>Start with one account</h2><p>Add your savings, chequing, TFSA, or FHSA and its current balance. Update it whenever you check your bank statement.</p><button type="button" onClick={() => setEditing('new')}>Add your first account</button></section>}
     {!loading && !error && <div className="account-grid">{accounts.map(account => <section key={account.id}>
       <p className="brand">{account.account_type}</p><h2>{account.name}</h2><p className="stat-value">{amount(account.balance)}</p>
+      <p>{amount(account.earmarked_amount)} earmarked / {amount(account.available_amount)} unassigned</p>
+      {account.goal_summary.length > 0 && <ul>{account.goal_summary.map(goal => <li key={goal.id}><strong>{goal.name}</strong> - {amount(goal.current_amount)} of {amount(goal.target_amount)}</li>)}</ul>}
+      <a href="#/budget">Manage goals</a>
       <button type="button" className="secondary" onClick={() => setEditing(account)} aria-label={`Update ${account.name}`}>Update account</button>
     </section>)}</div>}
     {editing && <Modal title={editing === 'new' ? 'Add an account' : 'Update account'} busy={busy} onClose={() => setEditing(null)}>

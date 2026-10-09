@@ -14,6 +14,21 @@ class Account(Base):
     name: Mapped[str] = mapped_column(String(120))
     account_type: Mapped[str] = mapped_column(String(30))
     balance: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    goals: Mapped[list['FinancialGoal']] = relationship(back_populates='account', lazy='selectin')
+
+    @property
+    def earmarked_amount(self) -> Decimal:
+        return sum((goal.current_amount for goal in self.goals), Decimal('0.00'))
+
+    @property
+    def available_amount(self) -> Decimal:
+        return self.balance - self.earmarked_amount
+
+    @property
+    def goal_summary(self) -> list[dict]:
+        return [{'id': goal.id, 'name': goal.name, 'current_amount': str(goal.current_amount),
+                 'target_amount': str(goal.target_amount)} for goal in self.goals]
+
 
 
 class Paycheque(Base):
@@ -52,6 +67,7 @@ class PaychequeAllocation(Base):
     paycheque_id: Mapped[int] = mapped_column(ForeignKey('paycheques.id'), index=True)
     goal_id: Mapped[int | None] = mapped_column(ForeignKey('financial_goals.id', ondelete='SET NULL'), nullable=True)
     debt_id: Mapped[int | None] = mapped_column(ForeignKey('debts.id', ondelete='SET NULL'), nullable=True)
+    account_id: Mapped[int | None] = mapped_column(ForeignKey('accounts.id', ondelete='SET NULL'), nullable=True)
     kind: Mapped[str] = mapped_column(String(8))
     name: Mapped[str] = mapped_column(String(120))
     amount_cents: Mapped[int] = mapped_column()
@@ -87,6 +103,13 @@ class Transaction(Base):
 
 class FinancialGoal(Base):
     __tablename__ = "financial_goals"
+
+    account_id: Mapped[int | None] = mapped_column(ForeignKey('accounts.id'), nullable=True)
+    account: Mapped[Account | None] = relationship(back_populates='goals', lazy='selectin')
+
+    @property
+    def account_name(self) -> str | None:
+        return self.account.name if self.account else None
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))

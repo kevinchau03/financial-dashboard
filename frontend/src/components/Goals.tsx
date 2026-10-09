@@ -12,6 +12,7 @@ import EditForm from './EditForm'
 import { amount } from '../api'
 import GoalFunding from './GoalFunding'
 import GoalPlan from './GoalPlan'
+import GoalAccountSelect from './GoalAccountSelect'
 import type { Goal } from '../types'
 
 export default function Goals({ onSavingsChange = () => undefined, revision = 0 }: { onSavingsChange?: () => void; revision?: number }) {
@@ -58,6 +59,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
           name: String(data.get('name')).trim(),
           target_amount: data.get('target_amount'),
           current_amount: data.get('current_amount'),
+          account_id: data.get('account_id') ? Number(data.get('account_id')) : null,
           due_date: data.get('due_date') || null,
           description: String(data.get('description')).trim() || null,
         }),
@@ -85,9 +87,10 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
   function renderGoal(goal: Goal) {
     return (
             <CollapsibleItem key={goal.id} title={goal.name}
-              summary={<><strong>{amount(goal.current_amount)}</strong> saved of {amount(goal.target_amount)}</>}
+              summary={<><strong>{amount(goal.current_amount)}</strong> saved of {amount(goal.target_amount)}<small className="goal-account-label">{goal.account_name ? `Account: ${goal.account_name}` : 'No linked account'}</small></>}
               progress={Number(goal.current_amount)} target={Number(goal.target_amount)} progressLabel={`${goal.name} progress`}>
               {goal.due_date && <p>Due <time dateTime={goal.due_date}>{goal.due_date}</time></p>}
+              {goal.account_name && <p>Kept in <strong>{goal.account_name}</strong> · earmarked from its balance</p>}
               <GoalPlan goal={goal} />
               {goal.description && <p className="description">{goal.description}</p>}
               <p>{Math.round(Number(goal.current_amount) / Number(goal.target_amount) * 100)}% saved{Number(goal.current_amount) >= Number(goal.target_amount) ? ' · Goal reached!' : ` · ${amount(String(Number(goal.target_amount) - Number(goal.current_amount)))} to go`}</p>
@@ -121,6 +124,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
             <label>What are you saving for?
               <input name="name" required maxLength={120} placeholder="Emergency fund, vacation…" />
             </label>
+            <GoalAccountSelect />
             <div className="amount-fields">
               <label>Target amount
                 <input name="target_amount" type="number" min="0.01" max="999999999999.99" step="0.01" required placeholder="5000.00" />
@@ -153,13 +157,3 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
       </div>
   )
 }
-
-
-
-
-
-
-
-
-
-

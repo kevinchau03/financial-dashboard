@@ -80,6 +80,7 @@ function DebtCard({ debt, onSave, onDelete }: { debt: DebtType; onSave: (debt: D
   }
   const lastPayment = debt.payments[0]
   return <CollapsibleItem title={debt.name}
+    cardAction={paidOff ? <DeleteItem kind="debts" id={debt.id} name={debt.name} disabled={saving || editing} resolve onDelete={onDelete} /> : undefined}
     summary={<><strong>{amount(debt.remaining_amount)}</strong> remaining of {amount(debt.amount)}</>}
     progress={Number(debt.current_amount)} target={Number(debt.amount)} progressLabel={`${debt.name} repayment progress`}>
     <p>{amount(debt.current_amount)} paid · {Math.round(Number(debt.current_amount) / Number(debt.amount) * 100)}% repaid</p>
@@ -101,7 +102,7 @@ function DebtCard({ debt, onSave, onDelete }: { debt: DebtType; onSave: (debt: D
         {error && <p role="alert">{error}</p>}
       </AppForm>}
       <button className="secondary" type="button" disabled={saving} onClick={() => setEditing(true)}>Edit debt</button>
-      <DeleteItem kind="debts" id={debt.id} name={debt.name} disabled={saving} onDelete={onDelete} />
+      {!paidOff && <DeleteItem kind="debts" id={debt.id} name={debt.name} disabled={saving} onDelete={onDelete} />}
     </>}
   </CollapsibleItem>
 }
@@ -144,7 +145,7 @@ export default function Debts({ onChange = () => undefined, revision = 0 }: { on
       {debts.map(debt => <DebtCard key={debt.id} debt={debt} onDelete={() => {
         setDebts(previous => previous.filter(item => item.id !== debt.id))
         onChange()
-        setNotice(`Deleted ${debt.name}.`)
+        setNotice(`${Number(debt.remaining_amount) === 0 ? 'Resolved' : 'Deleted'} ${debt.name}.`)
       }} onSave={updated => { setDebts(previous => previous.map(item => item.id === updated.id ? updated : item)); onChange(); }} />)}
     </section>
   </div>
