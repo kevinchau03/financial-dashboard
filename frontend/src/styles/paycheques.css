@@ -1,6 +1,5 @@
-.budget-page .paycheque-card.paycheque-planner { display: block; }
-.budget-page .paycheque-planner .modal fieldset { display: flex; flex-direction: column; align-items: stretch; }
-.budget-page .paycheque-planner .modal label { font-size: .85rem; }
+.budget-page .budget-paycheque-action .modal fieldset { display: flex; flex-direction: column; align-items: stretch; }
+.budget-page .budget-paycheque-action .modal label { font-size: .85rem; }
 .budget-page .modal .allocation-totals { position: sticky; top: 0; z-index: 1; }
 .budget-page .paycheque-planner > form { margin-bottom: 16px; }
 .budget-page .paycheque-planner .paycheque-overview { border-top: 1px solid var(--budget-line); padding-top: 20px; }

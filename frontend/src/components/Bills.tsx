@@ -118,7 +118,7 @@ export default function Bills({ onChange = () => undefined }: { onChange?: () =>
 
   return (
     <aside className="dashboard-column bills-sidebar" aria-label="Bill reminders">
-      <div className="list-heading"><div><h2 className="column-heading">Bill reminders</h2><p>Keep upcoming payments in view.</p></div>
+      <div className="list-heading"><div><h2 className="column-heading">Bill reminders</h2></div>
         <button className="secondary" type="button" onClick={() => { setSaveError(''); setCreating(true); }}>Add bill</button></div>
       {creating && <Modal title="Add a bill" busy={saving} onClose={() => setCreating(false)}>
         <AppForm onSubmit={createBill}>
@@ -183,7 +183,6 @@ export default function Bills({ onChange = () => undefined }: { onChange?: () =>
     </aside>
   )
 }
-
 
 
 

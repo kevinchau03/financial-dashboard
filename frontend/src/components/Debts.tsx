@@ -131,8 +131,7 @@ export default function Debts({ onChange = () => undefined, revision = 0 }: { on
     return () => controller.abort()
   }, [revision])
   return <div className="dashboard-column" data-tone="rose">
-    <div className="list-heading"><div><h2 className="column-heading">Debts</h2><p>Slowly chip away at your debt.</p></div>
-      <button type="button" disabled={loading} onClick={() => setCreating(true)}>Add debt</button></div>
+    <div className="list-heading"><h2 className="column-heading">Debts</h2></div>
     {creating && <Modal title="Add a debt" busy={saving} onClose={() => setCreating(false)}>
       <DebtForm onSavingChange={setSaving} onSave={saved => { setDebts(previous => [saved, ...previous]); onChange(); setNotice(`Added ${saved.name}.`); setCreating(false); }} />
     </Modal>}
@@ -147,10 +146,10 @@ export default function Debts({ onChange = () => undefined, revision = 0 }: { on
         onChange()
         setNotice(`${Number(debt.remaining_amount) === 0 ? 'Resolved' : 'Deleted'} ${debt.name}.`)
       }} onSave={updated => { setDebts(previous => previous.map(item => item.id === updated.id ? updated : item)); onChange(); }} />)}
+      {!loading && !error && debts.length > 0 && <button className="list-add-button" type="button" title="Add debt" aria-label="Add debt" onClick={() => setCreating(true)}>+</button>}
     </section>
   </div>
 }
-
 
 
 

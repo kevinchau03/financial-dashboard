@@ -53,7 +53,7 @@ Paycheque planning extends the Budget page's cream and moss palette. Keep entry 
 
 The Budget workspace carries the existing Howl's Moving Castle inspired cream and green identity through a quiet paper-and-ledger composition. This is a product interface for recording savings, debt repayments and bill reminders. English is the current UI language; existing currency formatting remains owned by `frontend/src/api.ts`. The app records financial activity and does not process payments or move money.
 
-The signature is a soft sky paycheque strip above the management lists. Goals and debts have the strongest action hierarchy; bills are supporting reminders. The landing page keeps its separate marketing composition.
+The signature is a restrained paycheque action at the top-right of the Budget header. Goals and debts have the strongest action hierarchy; their circular add controls follow the existing items instead of competing with section headings. Bills are supporting reminders. The landing page keeps its separate marketing composition.
 
 ## Colors
 

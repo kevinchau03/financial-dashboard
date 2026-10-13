@@ -116,8 +116,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
 
   return (
       <div className="dashboard-column" data-tone="leaf">
-      <div className="list-heading"><div><h2 className="column-heading">Goals</h2><p>Choose a target, make a saving plan, and give your savings a purpose.</p></div>
-        <button type="button" onClick={() => { setSaveError(''); setCreating(true); }}>Add goal</button></div>
+      <div className="list-heading"><h2 className="column-heading">Goals</h2></div>
       {creating && <Modal title="Create a goal" busy={saving} onClose={() => setCreating(false)}>
         <AppForm onSubmit={createGoal}>
           <fieldset disabled={saving}>
@@ -153,6 +152,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
         <div className="goals">
           {goals.map(renderGoal)}
         </div>
+        {!loading && !loadError && goals.length > 0 && <button className="list-add-button" type="button" title="Add goal" aria-label="Add goal" onClick={() => { setSaveError(''); setCreating(true); }}>+</button>}
       </section>
       </div>
   )
