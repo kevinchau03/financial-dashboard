@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import Budget from './pages/Budget'
@@ -11,9 +12,12 @@ import './styles/colors.css'
 
 export default function App() {
   const path = usePage()
-  return <div className={path === '#/' ? 'site-layout' : 'site-layout with-sidebar'}>
+  const [navigationCollapsed, setNavigationCollapsed] = useState(false)
+  const hasSidebar = path !== '#/'
+
+  return <div className={hasSidebar ? `site-layout with-sidebar${navigationCollapsed ? ' sidebar-collapsed' : ''}` : 'site-layout'}>
     <a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus() }}>Skip to content</a>
-    <Navigation path={path} />
+    <Navigation path={path} collapsed={navigationCollapsed} onToggle={() => setNavigationCollapsed(value => !value)} />
     <UnsavedChanges />
     <main id="main-content" tabIndex={-1}>
       {path === '#/' ? <Home /> : path === '#/dashboard' ? <Dashboard /> : path === '#/budget' ? <Budget /> : path === '#/budget-wrapped' ? <BudgetWrapped /> : path === '#/accounts' ? <Accounts /> : <div className="page-intro"><h1>Page not found</h1><a href="#/dashboard">Go to Dashboard</a></div>}

@@ -69,7 +69,7 @@ Open Sans carries headings, controls, body text and financial values across the 
 
 ## Layout
 
-The desktop sidebar uses a compact 190px width, 18px header spacing and 4px navigation gaps. Links retain 44px minimum height and readable text; mobile keeps the existing two-column navigation with tighter outer padding.
+The desktop sidebar uses a compact 190px width, 18px header spacing and 4px navigation gaps. A vertically centred edge control collapses it to a 24px rail, keeping the control visible so the navigation can always be reopened. Links retain 44px minimum height and readable text; mobile keeps the existing two-column navigation with tighter outer padding and does not collapse.
 
 Dashboard is a compact financial overview using the same cream, moss and sky theme. Four separate totals show account balances, total goal savings, remaining debt and all recorded bill amounts. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Below 1200px the secondary panels follow the primary area, and narrow layouts stack naturally. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs enter Dashboard while the explicit landing route remains available through the brand.
 
