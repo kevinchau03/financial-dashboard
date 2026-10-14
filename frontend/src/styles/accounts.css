@@ -1,0 +1,42 @@
+.account-stack { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.account-row { display: grid; grid-template-columns: minmax(140px, 1.5fr) minmax(90px, .8fr) minmax(90px, .8fr) minmax(200px, 1fr) auto; align-items: center; gap: 20px; padding: 20px 24px; }
+.account-row + .account-row { border-top: 1px solid var(--border); }
+.account-row > * { min-width: 0; }
+.account-identity h2 { font-size: 1.1rem; margin: 0 0 6px; overflow-wrap: anywhere; }
+.account-type, .account-figure > span, .balance-label { color: var(--muted); font-size: .8rem; }
+.account-figure { display: grid; gap: 6px; }
+.account-figure strong { font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.accounts-page .balance-edit-button { display: grid; gap: 4px; width: 100%; min-height: 100px; text-align: right; background: transparent; color: var(--text); border: 1px solid transparent; border-radius: 7px; padding: 10px 12px; }
+.accounts-page .balance-edit-button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--accent-leaf); }
+.balance-value { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 1.65rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.balance-value svg { flex-shrink: 0; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.balance-edit-hint { color: var(--muted); font-size: .75rem; }
+.account-balance-form { padding: 10px 12px; }
+.account-balance-form fieldset { gap: 8px; }
+.account-balance-form label { font-size: .8rem; color: var(--muted); }
+.account-balance-form input { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.account-balance-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.account-balance-actions button { min-width: 80px; min-height: 44px; padding: 8px 12px; font-size: .85rem; }
+.account-balance-form [role='alert'] { margin: 10px 0 0; font-size: .85rem; overflow-wrap: anywhere; }
+.accounts-page .account-details-button { min-height: 44px; background: transparent; color: var(--text); border: 1px solid var(--border); font-size: .85rem; white-space: nowrap; }
+.accounts-page .account-details-button:hover:not(:disabled) { background: var(--surface-hover); }
+.account-linked-goals { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: 12px; font-size: .85rem; }
+.account-linked-goals summary { min-height: 32px; color: var(--muted); }
+.account-linked-goals ul { list-style: none; padding: 0; margin: 8px 0 16px; }
+.account-linked-goals li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 24px; padding: 6px 0; overflow-wrap: anywhere; }
+.accounts-page { container-type: inline-size; }
+@container (max-width: 850px) {
+  .account-row { grid-template-columns: minmax(0, 1fr) minmax(240px, 1fr); gap: 16px 24px; }
+  .account-identity { grid-column: 1; }
+  .account-balance { grid-column: 2; grid-row: 1 / 4; }
+  .account-row-actions { grid-column: 1; }
+}
+@container (max-width: 540px) {
+  .account-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 18px 16px; gap: 18px 12px; }
+  .account-identity { grid-column: 1 / -1; }
+  .account-balance { grid-column: 1 / -1; grid-row: auto; }
+  .accounts-page .balance-edit-button { text-align: left; padding-inline: 0; }
+  .balance-value { justify-content: flex-start; }
+  .account-balance-form { padding-inline: 0; }
+  .account-row-actions { grid-column: 1 / -1; }
+}

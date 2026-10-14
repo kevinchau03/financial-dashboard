@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import AccountForm from '../components/AccountForm'
+import AccountRow from '../components/AccountRow'
 import type { Account } from '../components/AccountForm'
 import Modal from '../components/Modal'
 import Notice from '../components/Notice'
 import useNotice from '../hooks/useNotice'
-import { amount } from '../api'
+import '../styles/accounts.css'
 
 export default function Accounts() {
   const [accounts, setAccounts] = useState<Account[]>([])
@@ -31,19 +32,17 @@ export default function Accounts() {
     return () => controller.abort()
   }, [attempt])
   return <div className="accounts-page">
-    <div className="page-intro list-heading"><div><h1>Your accounts</h1><p>A simple view of where your money lives.</p></div><button type="button" disabled={loading || !!error} onClick={() => setEditing('new')}>Add account</button></div>
-    <p className="wrapped-intro">Manually tracked balances. Linked goals earmark portions of these balances. Unassigned money is available for another goal. Changes here do not move money.</p>
+    <div className="page-intro list-heading"><div><h1>Your accounts</h1><p>Click a balance to update it. Press Enter to save.</p></div><button type="button" disabled={loading || !!error} onClick={() => setEditing('new')}>Add account</button></div>
+    <p className="wrapped-intro">Manually tracked balances. Linked goals are allocated portions of these balances. Unassigned money is available for another goal. Changes here do not move money.</p>
     <Notice message={notice} />
     {loading && <p role="status">Loading accounts…</p>}
     {error && <div><p role="alert">{error}</p><button type="button" onClick={() => setAttempt(previous => previous + 1)}>Retry</button></div>}
     {!loading && !error && accounts.length === 0 && <section><h2>Start with one account</h2><p>Add your savings, chequing, TFSA, or FHSA and its current balance. Update it whenever you check your bank statement.</p><button type="button" onClick={() => setEditing('new')}>Add your first account</button></section>}
-    {!loading && !error && <div className="account-grid">{accounts.map(account => <section key={account.id}>
-      <p className="brand">{account.account_type}</p><h2>{account.name}</h2><p className="stat-value">{amount(account.balance)}</p>
-      <p>{amount(account.earmarked_amount)} earmarked / {amount(account.available_amount)} unassigned</p>
-      {account.goal_summary.length > 0 && <ul>{account.goal_summary.map(goal => <li key={goal.id}><strong>{goal.name}</strong> - {amount(goal.current_amount)} of {amount(goal.target_amount)}</li>)}</ul>}
-      <a href="#/budget">Manage goals</a>
-      <button type="button" className="secondary" onClick={() => setEditing(account)} aria-label={`Update ${account.name}`}>Update account</button>
-    </section>)}</div>}
+    {!loading && !error && accounts.length > 0 && <ul className="account-stack" aria-label="Your accounts">{accounts.map(account => <AccountRow key={account.id} account={account}
+      onEdit={() => setEditing(account)} onSave={saved => {
+        setAccounts(previous => previous.map(item => item.id === saved.id ? saved : item))
+        setNotice(`Updated ${saved.name} balance.`)
+      }} />)}</ul>}
     {editing && <Modal title={editing === 'new' ? 'Add an account' : 'Update account'} busy={busy} onClose={() => setEditing(null)}>
       <AccountForm account={editing === 'new' ? undefined : editing} onBusy={setBusy} onSave={saved => {
         setAccounts(previous => previous.some(account => account.id === saved.id) ? previous.map(account => account.id === saved.id ? saved : account) : [saved, ...previous])

@@ -42,9 +42,11 @@ export default function BillItem({ bill, active, children, currentDate }: {
         </>}
       </span>}
     </button>
-    <div id={id} className="bill-preview" hidden={!open}>
+    <div className="bill-disclosure" data-open={open} inert={!open} aria-hidden={!open}>
+    <div id={id} className="bill-preview">
       <p className="bill-meta">{bill.recurring ? 'Repeats monthly' : 'One-time bill'}{!bill.recurring && bill.is_paid && bill.due_date ? ` · Was due ${bill.due_date}` : ''}</p>
       {children}
+    </div>
     </div>
   </article>
 }

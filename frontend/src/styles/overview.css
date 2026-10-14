@@ -14,7 +14,7 @@
 .overview-page .overview-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
 .overview-page .overview-heading h2 { margin: 0; font-size: 1.45rem; }
 .overview-page a:not(.button-link) { color: var(--budget-moss); font-size: .85rem; text-underline-offset: 3px; }
-.overview-page .button-link { background: var(--budget-moss); min-height: 44px; border-radius: 7px; }
+.overview-page .button-link { background: var(--primary); min-height: 44px; border-radius: 7px; }
 .overview-page .overview-list, .overview-page .overview-progress-list { list-style: none; padding: 0; margin: 0; }
 .overview-page .overview-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-top: 1px solid var(--budget-line); }
 .overview-page .overview-list li > div { min-width: 0; }
@@ -26,7 +26,7 @@
 .overview-page .overview-progress-list progress { accent-color: var(--budget-moss); }
 .overview-page .overview-empty h3 { margin: 0 0 10px; font-size: 1.15rem; }
 .overview-page .overview-empty p { color: var(--budget-muted); font-size: .9rem; line-height: 1.6; }
-.overview-page .overview-alert { color: #a13e2b; background: var(--budget-wash); padding: 12px; border-radius: 7px; font-size: .85rem; }
+.overview-page .overview-alert { color: var(--danger); background: var(--budget-wash); padding: 12px; border-radius: 7px; font-size: .85rem; }
 .overview-page .overview-spending-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .overview-page .overview-spending-stats .stat-card { padding: 12px; border: 0; border-radius: 7px; background: var(--budget-wash); }
 .overview-page .overview-spending-stats .stat-value { font-size: 1.35rem; }

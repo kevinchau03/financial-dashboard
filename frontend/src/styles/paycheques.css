@@ -8,7 +8,7 @@
 .budget-page .allocation-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; padding: 16px; background: var(--budget-paper); border: 1px solid var(--budget-line); border-radius: var(--budget-radius); }
 .budget-page .allocation-totals small { display: block; color: var(--budget-muted); margin-bottom: 6px; }
 .budget-page .allocation-totals strong { display: block; font-size: 1.15rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.budget-page .allocation-over { color: var(--danger, #a13e2b); }
+.budget-page .allocation-over { color: var(--danger); }
 .budget-page .plan-guidance { color: var(--budget-muted); font-size: .9rem; line-height: 1.6; }
 .budget-page .allocation-group h3 { font-size: 1rem; margin: 0 0 12px; }
 .budget-page .allocation-input { display: grid; grid-template-columns: minmax(0, 1fr) 130px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--budget-line); }

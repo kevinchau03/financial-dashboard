@@ -1,15 +1,15 @@
 :root {
-  --budget-paper: #fffdf6;
-  --budget-ink: #303f38;
-  --budget-muted: #5c665c;
-  --budget-moss: #3f5e48;
-  --budget-wash: #e4ece9;
-  --budget-line: #d5d9c9;
+  --budget-paper: var(--surface);
+  --budget-ink: var(--text);
+  --budget-muted: var(--muted);
+  --budget-moss: var(--text);
+  --budget-wash: var(--surface);
+  --budget-line: var(--border);
   --budget-radius: 12px;
-  --scroll-thumb: #879b8e;
-  --scroll-track: #f3efdf;
-  --scroll-hover: #52735b;
-  --scroll-active: #3f5e48;
+  --scroll-thumb: var(--scroll-neutral);
+  --scroll-track: var(--background);
+  --scroll-hover: var(--muted);
+  --scroll-active: var(--text);
 }
 * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) var(--scroll-track); }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -33,7 +33,7 @@
 .budget-page .stat-card h2 { font: 600 .8rem var(--font-site); color: var(--budget-muted); }
 .budget-page .stat-value { font-size: clamp(1.75rem, 2.5vw, 2.3rem); letter-spacing: -.04em; line-height: 1.2; margin: 12px 0 8px; }
 .budget-page .stat-description { font-size: .78rem; max-width: 28ch; }
-.budget-page .paycheque-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 20px 24px; margin: 0 0 36px; background: var(--budget-wash); border: 1px solid #c5d5ca; border-radius: var(--budget-radius); }
+.budget-page .paycheque-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; padding: 20px 24px; margin: 0 0 36px; background: var(--budget-wash); border: 1px solid var(--border); border-radius: var(--budget-radius); }
 .budget-page .paycheque-card fieldset { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(240px, 1.2fr); align-items: center; gap: 16px; }
 .budget-page .paycheque-card label { font-size: 1rem; }
 .budget-page .paycheque-card > p { margin: 0; font-size: .85rem; font-variant-numeric: tabular-nums; }
@@ -47,14 +47,14 @@
 .budget-page .list-add-button { display: grid; place-items: center; width: 44px; min-height: 44px; margin: 18px auto 0; padding: 0; border-radius: 50%; font-size: 1.5rem; font-weight: 400; line-height: 1; }
 .budget-page button, .budget-page input, .budget-page textarea { border-radius: 7px; min-height: 44px; }
 .budget-page button { font-size: .85rem; font-weight: 600; padding: 11px 14px; transition: background-color 140ms ease; }
-.budget-page button:not(.secondary):not(.danger):not(.bill-summary) { background: var(--budget-moss); }
-.budget-page button:not(.secondary):not(.danger):not(.bill-summary):hover:not(:disabled) { background: #304d38; }
+.budget-page button:not(.secondary):not(.danger):not(.bill-summary) { background: var(--primary); }
+.budget-page button:not(.secondary):not(.danger):not(.bill-summary):hover:not(:disabled) { background: var(--primary-hover); }
 .budget-page button:active:not(:disabled) { transform: translateY(1px); }
 .budget-page button:disabled { cursor: not-allowed; }
 .budget-page section { border-radius: var(--budget-radius); padding: 16px; margin-bottom: 0; }
 .budget-page .bills-sidebar { border: 0; padding: 0; font-size: .9rem; }
 .budget-page .bills-sidebar .column-heading { font-size: 1.4rem; }
-.budget-page .bills-sidebar > section { background: #edeedf; }
+.budget-page .bills-sidebar > section { background: var(--surface); }
 .budget-page .collapsible-item { border: 1px solid var(--budget-line); border-radius: 8px; margin-top: 12px; overflow: hidden; }
 .budget-page .collapsible-item:first-child { margin-top: 0; }
 .budget-page .item-summary { padding: 18px 16px; gap: 12px; }
@@ -63,9 +63,9 @@
 .budget-page .item-balance strong { display: block; color: var(--budget-ink); font-size: 1.35rem; letter-spacing: -.025em; }
 .budget-page .item-content { padding: 0 16px 18px; font-size: .875rem; }
 .budget-page progress { height: 7px; border: 0; border-radius: 10px; overflow: hidden; }
-.budget-page progress::-webkit-progress-bar { background: #e4e8db; }
-.budget-page progress::-webkit-progress-value { background: #52735b; border-radius: 10px; }
-.budget-page progress::-moz-progress-bar { background: #52735b; }
+.budget-page progress::-webkit-progress-bar { background: var(--border); }
+.budget-page progress::-webkit-progress-value { background: var(--primary); border-radius: 10px; }
+.budget-page progress::-moz-progress-bar { background: var(--primary); }
 .budget-page .goal-plan { background: var(--budget-wash); padding: 14px; }
 .budget-page .contribution-form { border-top: 1px solid var(--budget-line); padding-top: 18px; margin-bottom: 18px; }
 .budget-page .contribution-form fieldset { gap: 10px; }
@@ -83,11 +83,11 @@
 .budget-page textarea { resize: none; min-height: 100px; }
 .budget-page .checkbox-label { padding: 12px; background: var(--budget-wash); border-radius: 7px; }
 .budget-page .checkbox-label input { min-height: 18px; }
-.form-errors { padding: 10px 14px; margin-top: 16px; background: #f4dfd5; border-radius: 7px; color: #8c3827; font-size: .85rem; }
+.form-errors { padding: 10px 14px; margin-top: 16px; background: var(--highlight-rose); border-radius: 7px; color: var(--danger); font-size: .85rem; }
 .form-errors p { margin: 4px 0; }
-[aria-invalid='true'] { border-color: #a13e2b; }
+[aria-invalid='true'] { border-color: var(--danger); }
 .resize-none { resize: none; }
-.budget-page .discard-prompt .danger { background: #8c3827; }
+.budget-page .discard-prompt .danger { background: var(--danger); }
 @container (max-width: 1100px) {
   .budget-page .dashboard { grid-template-columns: 1fr; }
   .budget-page .bills-sidebar { border-top: 1px solid var(--budget-line); padding-top: 24px; }
@@ -119,3 +119,28 @@
 
 .budget-page .item-with-action > .collapsible-item { border: 0; margin-top: 0; border-radius: 0; }
 .budget-page .item-card-action { padding: 0 16px 16px; }
+
+/* Native details keeps its keyboard semantics; intrinsic sizing follows content. */
+@supports (interpolate-size: allow-keywords) {
+  .budget-page details.collapsible-item { interpolate-size: allow-keywords; }
+  .budget-page details.collapsible-item::details-content {
+    height: 0;
+    overflow: clip;
+    transition: height 280ms cubic-bezier(.22, 1, .36, 1), content-visibility 280ms allow-discrete;
+  }
+  .budget-page details.collapsible-item[open]::details-content { height: auto; }
+}
+.budget-page .item-chevron { transition: transform 280ms cubic-bezier(.22, 1, .36, 1); }
+.budget-page .bill-disclosure {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 280ms cubic-bezier(.22, 1, .36, 1), visibility 280ms;
+}
+.budget-page .bill-disclosure[data-open='true'] { grid-template-rows: 1fr; visibility: visible; }
+.budget-page .bill-disclosure > .bill-preview { min-height: 0; overflow: hidden; padding-bottom: 0; }
+.budget-page .bill-disclosure > .bill-preview::after { content: ''; display: block; height: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .budget-page details.collapsible-item::details-content,
+  .budget-page .item-chevron, .budget-page .bill-disclosure { transition: none; }
+}

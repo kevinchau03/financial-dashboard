@@ -3,7 +3,7 @@
 .statement-files li + li { border-top: 1px solid var(--budget-line); }
 .statement-files a { display: grid; gap: 6px; padding: 18px 12px; border-radius: 6px; text-decoration: none; color: var(--budget-ink); cursor: pointer; }
 .statement-files a:hover { background: var(--budget-wash); }
-.statement-files a:active { background: #d0dfd9; }
+.statement-files a:active { background: var(--surface-hover); }
 .statement-files a[aria-disabled='true'] { opacity: .6; cursor: wait; }
 .statement-file-name { font-weight: 650; overflow-wrap: anywhere; }
 .statement-file-meta, .statement-detail-meta { color: var(--budget-muted); font-size: .85rem; }

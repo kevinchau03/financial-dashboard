@@ -1,30 +1,30 @@
 ---
 version: alpha
 name: MyBudgetPro
-description: A calm personal budget workspace in cream, moss green and soft sky tones.
+description: A calm personal budget workspace with neutral dark surfaces and earthy action accents.
 colors:
-  primary: "#3f5e48"
-  background: "#f3efdf"
-  surface: "#fffdf6"
-  text: "#303f38"
-  muted: "#5c665c"
-  wash: "#e4ece9"
-  border: "#d5d9c9"
-  focus: "#6e9bb2"
-  danger: "#a13e2b"
-  leaf-accent: "#2f6447"
-  leaf-surface: "#eaf3e4"
-  sky-accent: "#285f7b"
-  sky-surface: "#e7f1f7"
-  sun-accent: "#805b18"
-  sun-surface: "#fff2cf"
-  rose-accent: "#954a3b"
-  rose-surface: "#faeae2"
+  primary: "#a5b99a"
+  background: "#181a1b"
+  surface: "#232628"
+  text: "#eeece7"
+  muted: "#b5b3ad"
+  wash: "#232628"
+  border: "#484c4e"
+  focus: "#9ebac8"
+  danger: "#cd967e"
+  leaf-accent: "#a5b99a"
+  leaf-surface: "#232628"
+  sky-accent: "#9ebac8"
+  sky-surface: "#232628"
+  sun-accent: "#d5b66c"
+  sun-surface: "#232628"
+  rose-accent: "#c59caa"
+  rose-surface: "#232628"
 typography:
   sans:
-    fontFamily: "Open Sans, system-ui, sans-serif"
+    fontFamily: "Noto Sans, system-ui, sans-serif"
   display:
-    fontFamily: "Open Sans, system-ui, sans-serif"
+    fontFamily: "Noto Sans, system-ui, sans-serif"
 rounded:
   DEFAULT: "12px"
   control: "7px"
@@ -32,48 +32,46 @@ spacing:
   section-gap: "28px"
   card-padding: "16px"
 components:
-  button: { backgroundColor: "{colors.primary}", textColor: "{colors.surface}" }
+  button: { backgroundColor: "{colors.primary}", textColor: "{colors.background}" }
   card: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
   dialog: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
   guidance: { backgroundColor: "{colors.wash}", textColor: "{colors.muted}" }
   divider: { backgroundColor: "{colors.border}" }
   focus-ring: { backgroundColor: "{colors.focus}" }
   error-text: { textColor: "{colors.danger}" }
-  savings-card: { backgroundColor: "{colors.leaf-surface}", textColor: "{colors.leaf-accent}" }
-  accounts-card: { backgroundColor: "{colors.sky-surface}", textColor: "{colors.sky-accent}" }
-  bills-card: { backgroundColor: "{colors.sun-surface}", textColor: "{colors.sun-accent}" }
-  debt-card: { backgroundColor: "{colors.rose-surface}", textColor: "{colors.rose-accent}" }
+  savings-card: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
+  accounts-card: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
+  bills-card: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
+  debt-card: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
 ---
 
-Paycheque planning extends the Budget page's cream and moss palette. Keep entry compact, use a modal for the allocation worksheet, show three calm numeric totals and group targets into goals, debts and accounts. Use explicit Planned and Recorded labels instead of showing projected progress as actual savings. History stays behind a button and allocation details are collapsible. Reuse the shared form, dialog, notice, focus and scrollbar patterns; retain native date selection. Narrow screens keep amount fields readable without horizontal overflow.
+Paycheque planning uses the shared dark surfaces and earthy action accents. Keep entry compact, use a modal for the allocation worksheet, show three calm numeric totals and group targets into goals, debts and accounts. Use explicit Planned and Recorded labels instead of showing projected progress as actual savings. History stays behind a button and allocation details are collapsible. Reuse the shared form, dialog, notice, focus and scrollbar patterns; retain native date selection. Narrow screens keep amount fields readable without horizontal overflow.
 
 # MyBudgetPro Design System
 
 ## Overview
 
-The Budget workspace carries the existing Howl's Moving Castle inspired cream and green identity through a quiet paper-and-ledger composition. This is a product interface for recording savings, debt repayments and bill reminders. English is the current UI language; existing currency formatting remains owned by `frontend/src/api.ts`. The app records financial activity and does not process payments or move money.
+The workspace uses a quiet charcoal ledger with earthy highlights. This is a product interface for recording savings, debt repayments and bill reminders. English is the current UI language; existing currency formatting remains owned by `frontend/src/api.ts`. The app records financial activity and does not process payments or move money.
 
 The signature is a restrained paycheque action at the top-right of the Budget header. Goals and debts have the strongest action hierarchy; their circular add controls follow the existing items instead of competing with section headings. Bills are supporting reminders. The landing page keeps its separate marketing composition.
 
 ## Colors
 
-`frontend/src/index.css` owns four shared accent/surface pairs: sky for accounts and statement context, leaf for savings and income, rose for debt and outflow, and sun for bills. `styles/colors.css` applies optional semantic `data-tone` variants on StatCard and DashboardPanel, plus the corresponding Budget, Accounts and landing surfaces. Dark coloured headings and values sit on pale backgrounds; ordinary text and error states retain their existing colours. Thin accent edges and gentle panel washes add emphasis without introducing motion or changing layout. Labels remain the primary meaning, so colour is never the only cue.
+Dark mode uses neutral charcoal throughout: background #181a1b, cards #232628, hover surfaces #303436, text #eeece7, supporting text #b5b3ad, and borders #484c4e. All cards and ordinary headings/values share these colours across routes. Only buttons and highlighted elements (progress, status badges, focus rings, and thin accent edges) use earthy colours: sage #a5b99a, warm sky #9ebac8, gold #d5b66c, dusty rose #c59caa, and terracotta #cd967e. Accent-filled buttons use #181a1b labels for contrast. Danger retains explicit textual context.
 
-Runtime ownership: `frontend/src/styles/budget.css` defines the `--budget-*` and `--scroll-*` tokens. This document mirrors those values; it does not generate CSS. `Budget.tsx` imports that stylesheet, with page selectors scoped to `.budget-page`. Existing shared styles in `App.css` and `index.css` remain the baseline for sibling routes. The Budget background, focus and danger colours inherit that baseline. Future changes must update both this map and the matching runtime variables or inherited rule.
-
-Paper is `surface`; moss is primary action emphasis; wash separates guidance and the paycheque strip. Danger is textual as well as coloured. Forced colours retain native control and scrollbar semantics.
+Runtime ownership: `frontend/src/index.css` owns the palette and font tokens. `App.css` and route styles consume those tokens; `styles/budget.css` adapts them to existing `--budget-*` aliases and neutral scrollbar tokens. `styles/colors.css` owns shared semantic accent treatments. DESIGN.md documents runtime values; it does not generate CSS.
 
 ## Typography
 
-Open Sans carries headings, controls, body text and financial values across the site. `frontend/index.html` loads regular, medium, semibold, bold and italic faces through Google Fonts with display=swap. `frontend/src/index.css` owns the shared `--font-site` token, with system sans as the fallback. Headings use semibold. Amounts use tabular numerals. Headings scale from 2.4 to 3.25rem; list headings are 1.65rem. Supporting copy remains readable at .85rem. Long names and descriptions wrap rather than truncate.
+Noto Sans carries headings, controls, body text and financial values across the site. `frontend/index.html` loads regular, medium, semibold, bold and italic faces through Google Fonts with display=swap. `frontend/src/index.css` owns the shared `--font-site` token, with system sans as the fallback. Headings use semibold. Amounts use tabular numerals. Headings scale from 2.4 to 3.25rem; list headings are 1.65rem. Supporting copy remains readable at .85rem. Long names and descriptions wrap rather than truncate.
 
 ## Layout
 
 The desktop sidebar uses a compact 190px width, 18px header spacing and 4px navigation gaps. A vertically centred edge control collapses it to a 24px rail, keeping the control visible so the navigation can always be reopened. Links retain 44px minimum height and readable text; mobile keeps the existing two-column navigation with tighter outer padding and does not collapse.
 
-Dashboard is a compact financial overview using the same cream, moss and sky theme. Four separate totals show account balances, total goal savings, remaining debt and all recorded bill amounts. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Below 1200px the secondary panels follow the primary area, and narrow layouts stack naturally. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs enter Dashboard while the explicit landing route remains available through the brand.
+Dashboard is a compact financial overview using the same dark neutral theme and earthy accents. Four separate totals show account balances, total goal savings, remaining debt and all recorded bill amounts. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Below 1200px the secondary panels follow the primary area, and narrow layouts stack naturally. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs enter Dashboard while the explicit landing route remains available through the brand.
 
-The existing full-width sidebar shell remains. Content container breakpoints at 1100, 820 and 580px account for the actual available width. Above 1100px, two primary columns sit beside a 290px bills panel. Below that, bills follow goals and debts; below 580px the primary columns and summary ledger stack. The page owns natural document scrolling. No page height or overflow lock is added. Modal content scrolls within its established viewport limit.
+Every page fills the available screen width, with responsive outer padding and no centred page max-width. Hero copy retains a readable line length. The existing full-width sidebar shell remains. Content container breakpoints at 1100, 820 and 580px account for the actual available width. Above 1100px, two primary columns sit beside a 290px bills panel. Below that, bills follow goals and debts; below 580px the primary columns and summary ledger stack. The page owns natural document scrolling. No page height or overflow lock is added. Modal content scrolls within its established viewport limit.
 
 ## Elevation & Depth
 
@@ -91,7 +89,7 @@ Panels use 12px corners, controls 7px, and goal/debt rows 8px. Progress tracks a
 
 Buttons have deliberate hover, pressed, focus and disabled states. Budget targets are at least 44px high. Loading keeps the summary footprint stable. Errors remain inline and retain entered data. Primary actions are labelled with verbs; destructive confirmation uses its existing danger treatment. No new icon dependency is needed; the disclosure chevron and decorative plus retain text equivalents.
 
-Motion is limited to a 140ms colour transition and a 1px pressed response. Reduced motion disables transitions. Scrollbars inherit global thumb, track, hover and active tokens with standards and WebKit support.
+Motion uses a 140ms colour transition, a 1px pressed response, and a 280ms eased expansion/collapse on Budget goal, debt and bill cards. Native details animates intrinsic height where supported and falls back to immediate disclosure elsewhere; bills use a grid-row transition with collapsed content inert and hidden from accessibility. Reduced motion disables transitions. Scrollbars inherit global thumb, track, hover and active tokens with standards and WebKit support.
 
 Your Budget Wrapped uses `StatementLibrary` for a quiet list of file names, date
 ranges, and transaction counts. Each row navigates to a file-specific summary.
@@ -117,3 +115,6 @@ Goal card summaries show the linked account, or No linked account, without expan
 CollapsibleItem supports an optional cardAction outside the details disclosure. Paid-off debts show Resolve debt there even while collapsed, with the same DeleteItem confirmation and backend balance guard.
 
 Dashboard summary cards reuse StatCard and the existing abortable resources. Total saved sums goal current amounts without adding account balances; Total debt sums remaining balances; Total bills sums all recorded bill amounts including paid bills and is explicitly not a monthly projection. Summary cards use four columns on wide screens, two on intermediate widths and one on mobile.
+
+Accounts uses one full-width neutral stack with divided rows, shared typography, and inline balance actions. Each row shows account identity, earmarked and unassigned money, and the manually recorded balance. The balance button opens AppForm with a selected numeric input, Enter/Save commits, Cancel/Escape uses the shared discard guard, and success returns focus to the balance. Server errors retain the input; linked goal limits remain server-owned. Name/type edits and creation retain AccountForm/Modal. Linked goals are available through native details. Rows reflow at available container widths of 850px and 540px; document scrolling remains natural. Runtime layout owner: frontend/src/styles/accounts.css.
+
