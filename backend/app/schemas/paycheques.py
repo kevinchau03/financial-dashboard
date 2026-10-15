@@ -16,6 +16,9 @@ class PaychequeCreate(BaseModel):
     model_config = ConfigDict(extra='forbid')
     amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
     received_on: date = Field(default_factory=date.today)
+    next_payday: date | None = None
+    bills_reserved: Decimal = Field(default=Decimal('0.00'), ge=0, max_digits=14, decimal_places=2)
+    spending_reserved: Decimal = Field(default=Decimal('0.00'), ge=0, max_digits=14, decimal_places=2)
     request_id: UUID | None = None
     allocations: list[AllocationCreate] = Field(default_factory=list, max_length=200)
 
@@ -38,6 +41,9 @@ class PaychequeRead(BaseModel):
     id: int
     amount: Decimal
     received_on: date | None
+    next_payday: date | None
+    bills_reserved: Decimal
+    spending_reserved: Decimal
     allocated_amount: Decimal
     remaining_amount: Decimal
     allocations: list[AllocationRead]

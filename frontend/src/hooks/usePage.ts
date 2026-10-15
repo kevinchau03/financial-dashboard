@@ -6,6 +6,7 @@ export const pages = [
   { path: '#/', title: 'Home' },
   { path: '#/dashboard', title: 'Dashboard' },
   { path: '#/budget', title: 'Budget' },
+  { path: '#/budget/paycheques', title: 'Paycheque planner' },
   { path: '#/accounts', title: 'Accounts' },
   { path: '#/budget-wrapped', title: 'Your Budget Wrapped' },
 ] as const

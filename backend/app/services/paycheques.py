@@ -29,7 +29,8 @@ def reserve(session: Session, paycheque_id: int, allocations: list[AllocationCre
     if len({(item.kind, item.target_id) for item in allocations}) != len(allocations):
         raise HTTPException(422, 'Use one allocation per goal, debt or account in this plan.')
     total = sum(int(item.amount * 100) for item in allocations)
-    amount_cents = int(get_paycheque(session, paycheque_id).amount * 100)
+    pay = get_paycheque(session, paycheque_id)
+    amount_cents = int((pay.amount - pay.bills_reserved - pay.spending_reserved) * 100)
     result = session.execute(update(Paycheque).where(
         Paycheque.id == paycheque_id,
         Paycheque.allocated_cents + total <= amount_cents,
@@ -75,7 +76,13 @@ def create(payload: PaychequeCreate, session: Session):
     if payload.received_on > date.today():
         raise HTTPException(422, 'Received date cannot be in the future.')
     key = str(payload.request_id) if payload.request_id else None
+    if payload.next_payday and payload.next_payday <= payload.received_on:
+        raise HTTPException(422, 'Next payday must be after the received date.')
+    if payload.bills_reserved + payload.spending_reserved > payload.amount:
+        raise HTTPException(422, 'Reserves exceed this paycheque.')
     digest = fingerprint(payload.allocations, payload.amount, payload.received_on)
+    if payload.bills_reserved or payload.spending_reserved or payload.next_payday:
+        digest = sha256((digest + ':' + str(payload.bills_reserved.quantize(Decimal('.01'))) + ':' + str(payload.spending_reserved.quantize(Decimal('.01'))) + ':' + str(payload.next_payday)).encode()).hexdigest()
 
     def existing_request():
         saved = session.scalar(select(Paycheque).where(Paycheque.request_id == key)) if key else None
@@ -88,6 +95,7 @@ def create(payload: PaychequeCreate, session: Session):
         return existing
     try:
         saved = Paycheque(amount=payload.amount, received_on=payload.received_on,
+                         bills_reserved=payload.bills_reserved, spending_reserved=payload.spending_reserved, next_payday=payload.next_payday,
                          request_id=key, request_fingerprint=digest)
         session.add(saved)
         session.flush()

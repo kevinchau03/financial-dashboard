@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import Budget from './pages/Budget'
+import PaychequePlanner from './pages/PaychequePlanner'
 import BudgetWrapped from './pages/BudgetWrapped'
 import Accounts from './pages/Accounts'
 import Navigation from './components/Navigation'
@@ -20,7 +21,7 @@ export default function App() {
     <Navigation path={path} collapsed={navigationCollapsed} onToggle={() => setNavigationCollapsed(value => !value)} />
     <UnsavedChanges />
     <main id="main-content" tabIndex={-1}>
-      {path === '#/' ? <Home /> : path === '#/dashboard' ? <Dashboard /> : path === '#/budget' ? <Budget /> : path === '#/budget-wrapped' ? <BudgetWrapped /> : path === '#/accounts' ? <Accounts /> : <div className="page-intro"><h1>Page not found</h1><a href="#/dashboard">Go to Dashboard</a></div>}
+      {path === '#/' ? <Home /> : path === '#/dashboard' ? <Dashboard /> : path === '#/budget' ? <Budget /> : path === '#/budget/paycheques' ? <PaychequePlanner /> : path === '#/budget-wrapped' ? <BudgetWrapped /> : path === '#/accounts' ? <Accounts /> : <div className="page-intro"><h1>Page not found</h1><a href="#/dashboard">Go to Dashboard</a></div>}
     </main>
       <footer>
         <p>MyBudgetPro is a free, open-source project. <a href="https://github.com/mybudgetpro/mybudgetpro" target="_blank" rel="noopener noreferrer">Contribute on GitHub</a></p>

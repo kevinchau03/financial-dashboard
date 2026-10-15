@@ -14,7 +14,7 @@ def initialize_database(engine):
             connection.execute(text('ALTER TABLE paycheque_allocations ADD COLUMN account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL'))
     paycheque_columns = {column['name'] for column in inspect(engine).get_columns('paycheques')}
     with engine.begin() as connection:
-        for name, definition in {'received_on': 'DATE', 'allocated_cents': 'INTEGER NOT NULL DEFAULT 0',
+        for name, definition in {'bills_reserved': 'NUMERIC NOT NULL DEFAULT 0', 'spending_reserved': 'NUMERIC NOT NULL DEFAULT 0', 'next_payday': 'DATE', 'received_on': 'DATE', 'allocated_cents': 'INTEGER NOT NULL DEFAULT 0',
                                  'request_id': 'VARCHAR(36)', 'request_fingerprint': 'VARCHAR(64)'}.items():
             if name not in paycheque_columns:
                 connection.execute(text(f'ALTER TABLE paycheques ADD COLUMN {name} {definition}'))

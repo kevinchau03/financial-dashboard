@@ -37,6 +37,9 @@ class Paycheque(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     received_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    bills_reserved: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default='0')
+    spending_reserved: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default='0')
+    next_payday: Mapped[date | None] = mapped_column(Date, nullable=True)
     allocated_cents: Mapped[int] = mapped_column(default=0, server_default='0')
     request_id: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
     request_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -48,7 +51,7 @@ class Paycheque(Base):
 
     @property
     def remaining_amount(self) -> Decimal:
-        return self.amount - self.allocated_amount
+        return self.amount - self.allocated_amount - self.bills_reserved - self.spending_reserved
 
 
 class PaychequeAllocationBatch(Base):

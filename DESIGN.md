@@ -45,7 +45,7 @@ components:
   debt-card: { backgroundColor: "{colors.surface}", textColor: "{colors.text}" }
 ---
 
-Paycheque planning uses the shared dark surfaces and earthy action accents. Keep entry compact, use a modal for the allocation worksheet, show three calm numeric totals and group targets into goals, debts and accounts. Use explicit Planned and Recorded labels instead of showing projected progress as actual savings. History stays behind a button and allocation details are collapsible. Reuse the shared form, dialog, notice, focus and scrollbar patterns; retain native date selection. Narrow screens keep amount fields readable without horizontal overflow.
+Paycheque planning uses the shared dark surfaces and earthy action accents. Keep entry compact, use a dedicated Budget subpage for the allocation worksheet, show three calm numeric totals and group targets into goals, debts and accounts. Use explicit Planned and Recorded labels instead of showing projected progress as actual savings. History stays behind a button and allocation details are collapsible. Reuse the shared form, dialog, notice, focus and scrollbar patterns; retain native date selection. Narrow screens keep amount fields readable without horizontal overflow.
 
 # MyBudgetPro Design System
 
@@ -118,3 +118,5 @@ Dashboard summary cards reuse StatCard and the existing abortable resources. Tot
 
 Accounts uses one full-width neutral stack with divided rows, shared typography, and inline balance actions. Each row shows account identity, earmarked and unassigned money, and the manually recorded balance. The balance button opens AppForm with a selected numeric input, Enter/Save commits, Cancel/Escape uses the shared discard guard, and success returns focus to the balance. Server errors retain the input; linked goal limits remain server-owned. Name/type edits and creation retain AccountForm/Modal. Linked goals are available through native details. Rows reflow at available container widths of 850px and 540px; document scrolling remains natural. Runtime layout owner: frontend/src/styles/accounts.css.
 
+
+Paycheque planner lives at #/budget/paycheques as an indented Budget navigation child. PaychequePlan owns the guided page worksheet using AppForm, native date inputs and existing account/goal/debt targets; PaychequeAllocations, PaychequeHistory and DeleteItem retain recording, history and deletion behavior. Received money, bills/everyday reserves and allocations are saved atomically. Reserves reduce remaining money but never update bills or balances. Desktop uses a sticky review panel; narrow screens show a sticky remaining amount above the worksheet. Save stays on the page with the actual saved plan. No automatic financial recommendations are made. Reserves are fixed for a saved paycheque; cancelled pending allocations release only their allocation amounts.
