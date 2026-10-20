@@ -99,16 +99,17 @@ Each file is validated before saving, and its records commit together. An
 identical file, even renamed, is saved only once. Different files with overlapping
 transactions are not deduplicated. All records are shared; there are no user accounts.
 
-`get_total_spent(session)` in `app/services/analytics.py` runs this raw SQL and converts the
+`get_total_spent(session, statement_id)` in `app/services/analytics.py` runs this raw SQL and converts the
 result from cents to a Decimal dollar amount:
 
 ```sql
 SELECT COALESCE(SUM(debit_cents), 0)
-FROM transactions;
+FROM transactions
+WHERE statement_id = :statement_id;
 ```
 
-It totals all saved debits when no statement ID is supplied, including transfers
-or fees listed as debits; credits are not subtracted. The upload endpoint passes
+A statement ID is required. It totals only that statement's debits, including
+transfers or fees listed as debits; credits are not subtracted. The upload endpoint passes
 the uploaded file's `statement_id` to all three analytics helpers, so the frontend
 shows only that statement's income, spending, and time range. Re-uploading an
 existing file selects its original statement without duplicating transactions.

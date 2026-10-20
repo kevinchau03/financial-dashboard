@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import StatCard from './StatCard'
+import StatementWrapped from './StatementWrapped'
 import { amount } from '../api'
 import { statementDate } from '../statementTypes'
 import type { StatementContents } from '../statementTypes'
 
 export default function StatementDetail({ statementId }: { statementId: number }) {
+  const [experience, setExperience] = useState<'invite' | 'play' | 'summary'>('invite')
   const [contents, setContents] = useState<StatementContents | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -35,6 +37,13 @@ export default function StatementDetail({ statementId }: { statementId: number }
     {loading && <p role="status">Loading your statement…</p>}
     {error && <div><p role="alert">{error}</p><button type="button" className="secondary" onClick={() => setAttempt(previous => previous + 1)}>Try again</button></div>}
     {!loading && !error && contents && <>
+      {experience === 'invite' ? <section className="wrapped-invitation" aria-labelledby="wrapped-invite-title">
+        <span className="wrapped-invite-eyebrow">One statement. Six highlights.</span>
+        <h2 id="wrapped-invite-title">Want to play your Budget Wrapped?</h2>
+        <p>A quick look at the money, moments, and patterns in this file. Go at your own pace.</p>
+        <div className="actions"><button type="button" onClick={() => setExperience('play')}>Yes, play my Wrapped</button><button type="button" className="secondary" onClick={() => setExperience('summary')}>No thanks, view summary</button></div>
+      </section> : experience === 'play' ? <StatementWrapped statementId={statementId} filename={contents.filename} transactions={contents.rows} onClose={() => { setExperience('summary'); requestAnimationFrame(() => heading.current?.focus()) }} /> : <>
+      <button type="button" className="secondary" onClick={() => setExperience('play')}>Replay Budget Wrapped</button>
       <p className="statement-detail-meta">{contents.row_count.toLocaleString()} transactions · Summary for this file only</p>
       {contents.has_file ? <a className="statement-download text-link" href={`/api/statements/${statementId}/file`} download>Download original CSV</a>
         : <p className="upload-help statement-download">To download this older file, upload the same CSV again. Your saved summary will stay available.</p>}
@@ -60,6 +69,7 @@ export default function StatementDetail({ statementId }: { statementId: number }
           <button type="button" className="secondary" disabled={(page + 1) * 50 >= contents.row_count} onClick={() => setPage(previous => previous + 1)}>Next</button>
         </nav>}
       </section>
+      </>}
     </>}
   </div>
 }

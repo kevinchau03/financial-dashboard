@@ -5,17 +5,31 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
+import pandas as pd
 from sqlalchemy.orm import Session
 
 TD_HEADERS = ['Date', 'Transaction', 'Debit', 'Credit', 'Balance']
 
 
 def read_csv(contents: bytes, format: Literal['csv', 'td'] = 'csv') -> dict:
-    """Extract UTF-8 CSV cells. TD exports have no header; keep their first row."""
+    """Read UTF-8 CSV cells with pandas, preserving text and headerless TD rows."""
     if format not in ('csv', 'td'):
         raise ValueError('Choose csv or td format.')
-    reader = csv.reader(io.StringIO(contents.decode('utf-8-sig'), newline=''), strict=True)
-    records = [(reader.line_num, row) for row in reader]
+    text = contents.decode('utf-8-sig')
+    # pandas pads short rows. Retain original widths and physical line numbers
+    # so clean_data can still reject missing columns with a useful line error.
+    reader = csv.reader(io.StringIO(text, newline=''), strict=True)
+    structure = [(reader.line_num, len(row)) for row in reader]
+    width = max((count for _, count in structure), default=0)
+    if width:
+        frame = pd.read_csv(
+            io.StringIO(text, newline=''), header=None, names=range(width),
+            dtype=str, na_filter=False, skip_blank_lines=False, engine='python',
+        ).fillna('')
+        records = [(line, row[:count]) for (line, count), row in
+                   zip(structure, frame.values.tolist(), strict=True)]
+    else:
+        records = [(line, []) for line, _ in structure]
     if format == 'td':
         headers = TD_HEADERS.copy()
     else:

@@ -111,3 +111,22 @@ def download_statement(statement_id: int, session: Session):
     if statement.csv_contents is None:
         raise HTTPException(404, 'The original CSV was not retained for this older upload. Re-upload it to save the file.')
     return statement
+
+
+def statement_insights(statement_id: int, session: Session):
+    from app.services import analytics
+    find_statement(session, statement_id)
+    largest = analytics.get_largest_transaction(session, statement_id)
+    frequent = analytics.get_most_frequent_transaction_name(session, statement_id)
+    start, end = analytics.get_time_range(session, statement_id)
+    return {
+        'statement_id': statement_id,
+        'start_date': start, 'end_date': end,
+        'total_income': str(analytics.get_total_income(session, statement_id)),
+        'total_spent': str(analytics.get_total_spent(session, statement_id)),
+        'total_transactions': analytics.get_total_transactions(session, statement_id),
+        'most_frequent_transaction_name': frequent['name'] if frequent else None,
+        'most_frequent_transaction_count': frequent['count'] if frequent else 0,
+        'largest_transaction': largest,
+        'highest_spending_day': analytics.get_highest_spending_day(session, statement_id),
+    }

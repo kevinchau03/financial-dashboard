@@ -75,7 +75,7 @@ def test_headers_only_and_duplicate_headers(client):
 def test_saved_transactions_and_duplicate_upload(client):
     data = b'09/24/2026,Shop,0.10,,-1.20\n09/25/2026,Cafe,0.20,,2.00\n09/26/2026,Payment,,50.00,52.00'
     with Session(main.engine) as session:
-        assert get_total_spent(session) == Decimal('0.00')
+        assert get_total_spent(session, 1) == Decimal('0.00')
     first = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('statement.csv', data)}).json()
     assert first['already_imported'] is False
     assert first['stats'] == {
@@ -94,20 +94,24 @@ def test_saved_transactions_and_duplicate_upload(client):
             ('2026-09-25', 'Cafe', 20, None, 200, first['statement_id']),
             ('2026-09-26', 'Payment', None, 5000, 5200, first['statement_id']),
         ]
-        assert get_total_spent(session) == Decimal('0.30')
+        assert get_total_spent(session, first['statement_id']) == Decimal('0.30')
     response = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('another.csv', b'09/27/2026,Other,1.25,,53.25')})
     assert response.status_code == 200
     assert response.json()['stats'] == {
         'total_income': '0.00', 'total_spent': '1.25',
         'start_date': '2026-09-27', 'end_date': '2026-09-27',
     }
+    with Session(main.engine) as session:
+        assert get_total_spent(session, first['statement_id']) == Decimal('0.30')
+        assert get_total_spent(session, response.json()['statement_id']) == Decimal('1.25')
+        assert get_total_spent(session, 999999) == Decimal('0.00')
     # Reopening the first upload still selects its own transactions and totals.
     reopened = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('statement.csv', data)}).json()
     assert reopened['statement_id'] == first['statement_id']
     assert reopened['rows'] == first['rows']
     assert reopened['stats'] == first['stats']
     with Session(main.engine) as session:
-        assert get_total_spent(session) == Decimal('1.55')
+        assert get_total_spent(session, first['statement_id']) == Decimal('0.30')
 
 
 def test_clean_data_normalizes_one_statement_without_changing_input():
@@ -156,3 +160,16 @@ def test_invalid_statement_saves_nothing(client, amount):
     with Session(main.engine) as session:
         assert session.execute(text('SELECT COUNT(*) FROM statement_imports')).scalar_one() == 0
         assert session.execute(text('SELECT COUNT(*) FROM transactions')).scalar_one() == 0
+
+
+def test_pandas_read_preserves_literal_text_and_duplicate_headers():
+    extracted = read_csv(b'name,name,note\nNA,001.20,null\nN/A,,NaN\n')
+    assert extracted['headers'] == ['name', 'name', 'note']
+    assert extracted['rows'] == [['NA', '001.20', 'null'], ['N/A', '', 'NaN']]
+
+
+def test_pandas_read_preserves_ragged_rows_and_multiline_error_locations():
+    extracted = read_csv(b'2026-06-08,"Shop\nInc",1,,100\n2026-06-09,Refund,,2,102,extra', format='td')
+    assert extracted['rows'][0] == ['2026-06-08', 'Shop\nInc', '1', '', '100']
+    with pytest.raises(ValueError, match='Line 3: expected 5 columns; found 6'):
+        clean_data(extracted)

@@ -32,3 +32,8 @@ def download_statement(statement_id: int, session: Annotated[Session, Depends(ge
         'Content-Disposition': f"attachment; filename*=UTF-8''{quote(statement.filename, safe='')}",
         'X-Content-Type-Options': 'nosniff',
     })
+
+
+@router.get('/{statement_id}/insights')
+def statement_insights(statement_id: int, session: Annotated[Session, Depends(get_session)]):
+    return statements.statement_insights(statement_id=statement_id, session=session)
