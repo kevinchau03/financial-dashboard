@@ -4,7 +4,7 @@
 [data-tone='sun'] { --card-accent: var(--accent-sun); }
 [data-tone='rose'] { --card-accent: var(--accent-rose); }
 .stat-card[data-tone] { border-top-color: var(--card-accent); }
-.overview-page .overview-panel[data-tone] { border-top: 3px solid var(--card-accent); }
+
 .overview-page .overview-panel[data-tone] progress { accent-color: var(--card-accent); }
 .budget-page .dashboard-column[data-tone] > section { border-top: 3px solid var(--card-accent); }
 .budget-page .dashboard-column[data-tone] progress::-webkit-progress-value { background: var(--card-accent); }
