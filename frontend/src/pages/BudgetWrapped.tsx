@@ -57,16 +57,19 @@ export default function BudgetWrapped() {
   return <div className="wrapped-page">
     <h1 ref={pageHeading} tabIndex={-1}>Your Budget Wrapped</h1>
     {statementId !== null ? <StatementDetail key={statementId} statementId={statementId} /> : <>
-      <p className="wrapped-intro">Your statements, one at a time. Save a bank CSV and revisit its spending summary whenever you like.</p>
+      <p className="wrapped-intro">See where your money went. Open a statement or add a new one.</p>
+      <div className="wrapped-library-layout">
       <StatementLibrary busy={loading} />
-      <section aria-labelledby="upload-heading" aria-busy={loading}>
-        <h2 id="upload-heading">Upload a statement</h2>
-        <p className="upload-help">Use a bank CSV with no header row: date (MM/DD/YYYY or YYYY-MM-DD), transaction name, debit, and credit. Extra columns such as balances or account numbers are ignored.</p>
+      <section className="statement-upload-panel" aria-labelledby="upload-heading" aria-busy={loading}>
+        <h2 id="upload-heading">Add a statement</h2>
+        <p className="upload-help">Upload a bank CSV to explore its summary and Budget Wrapped.</p>
+        <details className="statement-format-help"><summary>CSV format</summary><p className="upload-help">No header row: date (MM/DD/YYYY or YYYY-MM-DD), transaction name, debit, and credit. Extra columns are ignored.</p></details>
         <CsvUpload disabled={loading} onFileSelect={selected => { setFile(selected); setError('') }} />
         <div className="actions"><button type="button" disabled={!file || loading} onClick={upload}>{loading ? 'Saving…' : 'Save statement'}</button></div>
         {error && <p role="alert">{error}</p>}
         <p role="status">{loading ? 'Saving your statement. Its summary will open when ready.' : ''}</p>
       </section>
+      </div>
     </>}
   </div>
 }

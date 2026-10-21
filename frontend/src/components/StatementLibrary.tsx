@@ -28,17 +28,16 @@ export default function StatementLibrary({ busy }: { busy: boolean }) {
     return () => controller.abort()
   }, [page, attempt])
   return <section aria-labelledby="library-heading" aria-busy={loading} className="statement-library">
-    <h2 id="library-heading">Your saved statements</h2>
-    <p className="upload-help">Open a file to see its own spending, income, and transactions.</p>
+    <div className="statement-library-heading"><h2 id="library-heading">Saved statements</h2>{!loading && !error && <span>{total} {total === 1 ? 'file' : 'files'}</span>}</div>
     {loading ? <p role="status">Loading statements…</p> : error ? <div>
       <p role="alert">{error}</p><button type="button" className="secondary" onClick={() => setAttempt(previous => previous + 1)}>Try again</button>
-    </div> : total === 0 ? <p className="statement-empty">No statements saved yet. Upload your first TD CSV below to start your collection.</p> : <>
+    </div> : total === 0 ? <div className="statement-empty"><h3>Your first insight starts here</h3><p>Add a bank CSV to see its money in, money out, and transaction highlights.</p></div> : <>
       <ul className="statement-files">
-        {statements.map(statement => <li key={statement.statement_id}>
+        {statements.map((statement, index) => <li key={statement.statement_id}>
           <a href={`#/budget-wrapped?statement=${statement.statement_id}`} aria-disabled={busy || undefined} onClick={event => { if (busy) event.preventDefault() }}>
-            <span className="statement-file-name">{statement.filename}</span>
+            <span className="statement-file-name">{page === 0 && index === 0 && <span className="statement-latest-label">Latest upload</span>}{statement.filename}</span>
             <span className="statement-file-meta">{statement.row_count.toLocaleString()} transactions{statement.start_date && statement.end_date && <> · {statementDate(statement.start_date)} – {statementDate(statement.end_date)}</>}</span>
-            <span className="statement-file-open">View statement <span aria-hidden="true">→</span></span>
+            <span className="statement-file-open">Open summary</span>
           </a>
         </li>)}
       </ul>

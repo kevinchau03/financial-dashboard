@@ -16,12 +16,12 @@
 .feature-grid > section:nth-child(3) { border-top: 3px solid var(--accent-sky); }
 .budget-page .goal-account-label { display: block; margin-top: 4px; font-weight: 400; overflow-wrap: anywhere; }
 button.secondary { background: var(--accent-sky); color: var(--on-accent); }
-button.secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-sky), white 15%); }
+button.secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-sky), white 10%); }
 button.danger, .budget-page .discard-prompt .danger { background: var(--accent-terra); color: var(--on-accent); }
-button.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-terra), white 15%); }
+button.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-terra), white 10%); }
 .page-navigation a[aria-current='page'] { background: var(--accent-leaf); color: var(--on-accent); }
 .page-navigation a.wrapped-nav-button { background: var(--accent-sky); color: var(--on-accent); }
-.page-navigation a.wrapped-nav-button:hover { background: color-mix(in srgb, var(--accent-sky), white 15%); }
+.page-navigation a.wrapped-nav-button:hover { background: color-mix(in srgb, var(--accent-sky), white 10%); }
 .overview-page .button-link:hover, .button-link:hover { background: var(--primary-hover); }
 button:active:not(:disabled), .button-link:active { filter: brightness(.92); }
 .budget-eyebrow, .item-chevron { color: var(--muted); }
@@ -31,3 +31,42 @@ progress { accent-color: var(--card-accent, var(--primary)); }
   :root { color-scheme: light dark; }
   button, .button-link, .page-navigation a[aria-current='page'] { forced-color-adjust: auto; }
 }
+
+/* Warm Gouache: cream foundations, dusty-blue structure, sunset actions (60/30/10). */
+.site-sidebar { background: var(--surface-meadow); }
+.site-header:not(.site-sidebar) { background: var(--surface-sky); }
+.site-sidebar .page-navigation a:hover { background: color-mix(in srgb, var(--surface-meadow), white 8%); }
+.page-navigation a.wrapped-nav-button { background: var(--accent-sun); }
+.page-navigation a.wrapped-nav-button:hover { background: color-mix(in srgb, var(--accent-sun), white 10%); }
+.overview-page .wrapped-dashboard-action { background: var(--accent-sun); }
+.overview-page .wrapped-dashboard-action:hover { background: color-mix(in srgb, var(--accent-sun), white 10%); }
+.overview-page .overview-statement > .overview-panel,
+.wrapped-page .statement-upload-panel { background: var(--surface-magic); }
+.status { background: var(--highlight-sun); color: var(--text); }
+.status.paid { background: var(--highlight-leaf); color: var(--text); }
+.status.overdue { background: var(--highlight-rose); color: var(--danger); }
+[role='status'] { color: var(--accent-leaf); }
+:focus-visible { outline-color: var(--focus); }
+
+.site-sidebar, .site-header:not(.site-sidebar) { --text: #FAF8F5; --muted: #E0E7E8; color: var(--text); }
+.site-sidebar .page-navigation a:hover { background: #607E8B; }
+.site-sidebar .page-navigation a[aria-current='page'] { background: var(--primary); color: var(--on-accent); }
+button.secondary { color: #FAF8F5; }
+.page-navigation a.wrapped-nav-button { color: var(--on-accent); }
+button.danger, .budget-page .discard-prompt .danger { color: #FAF8F5; }
+button:hover:not(:disabled) { background: var(--primary-hover); }
+button.secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-sky), black 12%); }
+.overview-page .overview-statement > .overview-panel { --text: #FAF8F5; --muted: #E0E7E8; background: var(--accent-sky); color: var(--text); }
+.overview-page .overview-metrics .stat-card,
+.statement-summary-metrics .stat-card,
+.account-stack, .planner-section, .planner-summary,
+.wrapped-page .statement-upload-panel, .statement-wrapped { box-shadow: var(--shadow-soft); }
+.overview-page .overview-statement > .overview-panel { box-shadow: var(--shadow-raised); }
+.budget-page .dashboard-column > section { box-shadow: var(--shadow-soft); }
+.modal { box-shadow: var(--shadow-raised); }
+.wrapped-metric, .wrapped-player-heading > span, .wrapped-transaction-detail > strong, .wrapped-frequency strong { color: var(--text); }
+.page-navigation a.wrapped-nav-button:hover,
+.overview-page .wrapped-dashboard-action:hover { background: var(--primary-hover); }
+.site-header .site-brand { color: var(--text); }
+.site-sidebar .sidebar-toggle, .site-sidebar .sidebar-toggle:hover:not(:disabled) { color: #344E5A; }
+.site-sidebar :focus-visible { outline-color: #FAF8F5; }
