@@ -7,10 +7,10 @@ from app import main
 
 @pytest.mark.parametrize('kind,payload,payment_table', [
     ('goals', {'name': 'Trip', 'target_amount': '100', 'current_amount': '20'}, None),
-    ('bills', {'name': 'Internet', 'amount': '100'}, 'bill_payments'),
-    ('debts', {'name': 'Loan', 'amount': '100'}, 'debt_payments'),
+    ('bills', {'name': 'Internet', 'amount': '100'}, 'payments'),
+    ('debts', {'name': 'Loan', 'amount': '100'}, 'payments'),
 ])
-def test_delete_removes_only_selected_item_and_payments(client, kind, payload, payment_table):
+def test_delete_removes_only_selected_item_and_preserves_payments(client, kind, payload, payment_table):
     first = client.post(f'/api/{kind}', json=payload).json()
     other = client.post(f'/api/{kind}', json=payload).json()
     if payment_table:
@@ -26,7 +26,8 @@ def test_delete_removes_only_selected_item_and_payments(client, kind, payload, p
     if payment_table:
         assert len(remaining[0]['payments']) == 1
         with Session(main.engine) as session:
-            assert session.execute(text(f'SELECT COUNT(*) FROM {payment_table}')).scalar_one() == 1
+            assert session.execute(text('SELECT COUNT(*) FROM payments')).scalar_one() == 2
+            assert session.execute(text(f'SELECT COUNT(*) FROM payments WHERE {kind[:-1]}_id IS NULL')).scalar_one() == 1
     assert client.delete(f"/api/{kind}/{first['id']}").status_code == 404
     assert client.delete(f'/api/{kind}/99999').status_code == 404
     metric, field, expected = {

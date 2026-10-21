@@ -159,7 +159,7 @@ with Session(engine) as session:
 
 - `DELETE /api/goals/{id}`, `DELETE /api/bills/{id}`, and `DELETE /api/debts/{id}`
   permanently remove an item and return 204 (404 if missing). Bill and debt
-  payment histories are deleted in the same transaction. The frontend asks for
+  payment histories remain in the unified ledger with saved names and detached target links. The frontend asks for
   confirmation and refreshes the corresponding summary totals.
 
 - `PUT /api/goals/{id}` edits name, target amount, due date, and description,
@@ -193,7 +193,7 @@ with Session(engine) as session:
 - `PUT /api/debts/{id}` edits name, total amount, optional due date, description,
   and interest rate without altering payments. Total debt cannot be below paid-to-date.
 - `POST /api/debts/{id}/payments` accepts `amount` and `paid_on`. It atomically
-  increments paid-to-date and inserts a `DebtPayment` record with the due-date snapshot.
+  increments paid-to-date and inserts a unified `Payment` record with the due-date snapshot.
   Payments must be positive, no larger than the remaining balance, and not future-dated.
 - Responses include `remaining_amount` and payment history ordered by payment date
   (newest first). Debts are fully paid when remaining amount is zero.
@@ -235,3 +235,51 @@ separate totals and statement imports are not consolidated across files.
 Allocations accept `kind: account` with an account ID. Completing an account allocation increases its recorded balance atomically and is idempotent. It does not update a savings goal or transfer money. Do not allocate the same money to both a goal and an account. Startup adds nullable `account_id` to existing allocation tables without replacing data. `DELETE /api/paycheques/{id}` removes the paycheque, allocations and retry batches; completed goal contributions, account balances and debt payments are retained.
 
 Account-backed goals: GoalAccountSelect reuses native select, AppForm and existing feedback. Optional links preserve older goals. Linked current_amount earmarks existing account money; direct goal additions assign existing funds and cannot exceed the account balance. Paycheque completion records a new deposit in both linked goal and account atomically. Account balance edits cannot reduce the balance below earmarked funds. Unlinking/deleting a goal releases its earmark without changing account balance. Source: backend/app/services/goals.py and backend/app/services/paycheques.py.
+
+
+## Unified payment ledger
+
+`Payment` / `payments` is the single completed-payment model for bills, debts and
+goal contributions. Real nullable foreign keys identify targets; a database check
+constrains them to the payment kind. Positive two-decimal Decimal amounts, payment
+dates, due-date snapshots, saved target names, source and UTC recording timestamps
+are persisted. Existing bill/debt payment endpoints and their ordered nested history
+remain available; their history now uses the shared payment response schema.
+
+`GET /api/payments?kind=goal&page=1&page_size=20` returns `items`, filtered `total`,
+`page`, `page_size`, and `pages`. Kind is optional (`bill`, `debt`, `goal`); page size
+is 1–100, default 20. Pages are clamped to the last available page, including page 1
+for empty results. Ordering is payment date descending, then ID descending, supported
+by chronology and kind/chronology indexes. This read-only endpoint follows the
+existing shared-workspace access model; it introduces no user/account isolation.
+
+Goal additions now record a payment in the same transaction as their balance update.
+An account-backed direct contribution still earmarks existing funds; a completed
+paycheque contribution still increases both goal and linked account. The ledger
+records the goal once. Account-only allocations are balance deposits, not goal,
+bill or debt payments. Plans and cancellations never create payment records.
+Completed goal/debt allocations are transactionally guarded and have a unique
+allocation reference, so repeated/concurrent completion creates one payment only.
+The shared writer does not commit: calling workflows own the transaction.
+
+Deleting/resolving a bill, debt or goal now retains its payment history and original
+name, clearing its target link. Deleting a paycheque clears payment allocation links
+and preserves recorded activity and balances. History is not silently rewritten on
+rename. No ledger edit/delete API is exposed. Opening balances are not payments.
+
+Startup runs versioned migration `20261020_unified_payments` before serving requests.
+It copies all old bill/debt payments, backfills completed goal allocations still in
+the database, then retires `bill_payments` and `debt_payments`. The version is saved
+in `schema_migrations`. Copy, backfill, table retirement and version marking are one
+transaction, with an explicit SQLite write lock; errors abort startup, roll back,
+and leave legacy history available for repair/retry. Balance values are never
+replayed. Completed debt allocations already have legacy payment rows and are not
+backfilled again. Historical recording timestamps stay unknown (`null`); completed
+goal allocation due dates are also unknown. Old goal additions without a dated
+record, and allocations from already-deleted plans, cannot be reconstructed.
+Back up an existing database before upgrading; start the new backend only after
+stopping older app processes so they cannot write to the retired tables.
+
+SQLite foreign keys are enabled on connection. Migration, rollback, fixed-precision
+amounts, concurrency, allocation retries, pagination, target/plan deletion and
+foreign-key/check constraints are covered in `tests/test_payments.py`.

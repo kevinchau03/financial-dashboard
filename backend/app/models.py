@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary
+from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary, CheckConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -132,17 +132,8 @@ class Bills(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_paid: Mapped[bool] = mapped_column(default=False, server_default="0")
     recurrence_day: Mapped[int | None] = mapped_column(nullable=True)
-    payments: Mapped[list["BillPayment"]] = relationship(order_by="desc(BillPayment.paid_on), desc(BillPayment.id)", lazy="selectin", cascade="all, delete-orphan")
+    payments: Mapped[list['Payment']] = relationship(order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
 
-
-class BillPayment(Base):
-    __tablename__ = "bill_payments"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    bill_id: Mapped[int] = mapped_column(ForeignKey("bills.id"), index=True)
-    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-    paid_on: Mapped[date] = mapped_column(Date)
-    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 class Debts(Base):
     __tablename__ = "debts"
@@ -154,17 +145,43 @@ class Debts(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     interest_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    payments: Mapped[list["DebtPayment"]] = relationship(order_by="desc(DebtPayment.paid_on), desc(DebtPayment.id)", lazy="selectin", cascade="all, delete-orphan")
+    payments: Mapped[list['Payment']] = relationship(order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
 
     @property
     def remaining_amount(self) -> Decimal:
         return self.amount - self.current_amount
 
-class DebtPayment(Base):
-    __tablename__ = "debt_payments"
+class Payment(Base):
+    """Completed records only; target names survive rename/deletion.
+
+    Nullable, real foreign keys retain referential integrity without deleting history.
+    An allocation can produce at most one payment. No balance is inferred from this ledger.
+    """
+    __tablename__ = 'payments'
+    __table_args__ = (
+        CheckConstraint('amount > 0 AND amount <= 999999999999.99', name='payment_positive_amount'),
+        CheckConstraint("(kind = 'bill' AND debt_id IS NULL AND goal_id IS NULL) OR "
+                        "(kind = 'debt' AND bill_id IS NULL AND goal_id IS NULL) OR "
+                        "(kind = 'goal' AND bill_id IS NULL AND debt_id IS NULL)", name='payment_target_kind'),
+        CheckConstraint("source IN ('manual', 'paycheque', 'legacy')", name='payment_source'),
+        Index('ix_payments_chronology', 'paid_on', 'id'),
+        Index('ix_payments_kind_chronology', 'kind', 'paid_on', 'id'),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    debt_id: Mapped[int] = mapped_column(ForeignKey("debts.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(8))
+    target_name: Mapped[str] = mapped_column(String(120))
+    bill_id: Mapped[int | None] = mapped_column(ForeignKey('bills.id', ondelete='SET NULL'), index=True)
+    debt_id: Mapped[int | None] = mapped_column(ForeignKey('debts.id', ondelete='SET NULL'), index=True)
+    goal_id: Mapped[int | None] = mapped_column(ForeignKey('financial_goals.id', ondelete='SET NULL'), index=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     paid_on: Mapped[date] = mapped_column(Date)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    source: Mapped[str] = mapped_column(String(12), default='manual')
+    allocation_id: Mapped[int | None] = mapped_column(ForeignKey('paycheque_allocations.id', ondelete='SET NULL'), unique=True)
+    # Legacy history has no known recording timestamp; never invent one.
+    recorded_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    @property
+    def target_id(self) -> int | None:
+        return {'bill': self.bill_id, 'debt': self.debt_id, 'goal': self.goal_id}[self.kind]

@@ -29,3 +29,5 @@ def initialize_database(engine):
     if "is_paid" not in {column["name"] for column in inspect(engine).get_columns("bills")}:
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE bills ADD COLUMN is_paid BOOLEAN NOT NULL DEFAULT 0"))
+    from app.payment_migration import migrate_payments
+    migrate_payments(engine)

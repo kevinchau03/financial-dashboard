@@ -38,7 +38,7 @@ export default function DeleteItem({ kind, id, name, disabled, onDelete, resolve
   return <>
     <button type="button" className="secondary" disabled={disabled} onClick={() => { setError(''); setOpen(true) }}>{action}</button>
     {open && <Modal title={`${resolving ? 'Resolve' : 'Delete'} ${name}?`} busy={busy} onClose={() => setOpen(false)}>
-      {resolving ? <p>This debt is paid off. Resolving it permanently deletes the debt and its payment history. This cannot be undone.</p> : kind === 'paycheques' ? <p>This permanently removes this paycheque and its allocation history, including unfinished plans. Recorded goal savings, account balances and debt payments stay unchanged. This cannot be undone.</p> : <p>This permanently removes this {label}{kind !== 'goals' ? ' and its payment history' : ''}. This cannot be undone.</p>}
+      {resolving ? <p>This debt is paid off. Resolving it permanently deletes the debt. Its recorded payments remain in Activity history. This cannot be undone.</p> : kind === 'paycheques' ? <p>This permanently removes this paycheque and its allocation history, including unfinished plans. Recorded goal savings, account balances and debt payments stay unchanged. This cannot be undone.</p> : <p>This permanently removes this {label}. Recorded payments and contributions remain in Activity history. This cannot be undone.</p>}
       <div className="actions">
         <button type="button" className="secondary" disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
         <button type="button" disabled={busy} onClick={remove}>{busy ? 'Deleting…' : action}</button>

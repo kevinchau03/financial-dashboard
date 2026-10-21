@@ -16,7 +16,7 @@ def test_td_statement_preserves_first_transaction(client):
     assert response.json()['rows'] == [['2026-09-24', 'Shop, Inc', '2.39', None], ['2026-09-23', 'Payment', None, '50.00']]
 
 
-@pytest.mark.parametrize('data', [b'', b'02/30/2026,Shop,1,,2', b'09/24/2026,Shop,1', b'09/24/2026,Shop,no,,2', b'09/24/2026,Shop,1,,'])
+@pytest.mark.parametrize('data', [b'', b'02/30/2026,Shop,1,,2', b'09/24/2026,Shop,1', b'09/24/2026,Shop,no,,2'])
 def test_invalid_td_statement(client, data):
     assert client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('statement.csv', data, 'text/csv')}).status_code == 400
 
@@ -90,9 +90,9 @@ def test_saved_transactions_and_duplicate_upload(client):
         assert session.execute(text('SELECT COUNT(*) FROM statement_imports')).scalar_one() == 1
         rows = session.execute(text('SELECT date, description, debit_cents, credit_cents, balance_cents, statement_id FROM transactions ORDER BY id')).all()
         assert rows == [
-            ('2026-09-24', 'Shop', 10, None, -120, first['statement_id']),
-            ('2026-09-25', 'Cafe', 20, None, 200, first['statement_id']),
-            ('2026-09-26', 'Payment', None, 5000, 5200, first['statement_id']),
+            ('2026-09-24', 'Shop', 10, None, 0, first['statement_id']),
+            ('2026-09-25', 'Cafe', 20, None, 0, first['statement_id']),
+            ('2026-09-26', 'Payment', None, 5000, 0, first['statement_id']),
         ]
         assert get_total_spent(session, first['statement_id']) == Decimal('0.30')
     response = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('another.csv', b'09/27/2026,Other,1.25,,53.25')})
@@ -118,7 +118,7 @@ def test_clean_data_normalizes_one_statement_without_changing_input():
     parsed = read_csv(b'\xef\xbb\xbf06/08/2026," Shop, Inc ","1,234.5",,2000\n2026-06-09,Refund,,0,2000', format='td')
     original_rows = [row.copy() for row in parsed['rows']]
     cleaned = clean_data(parsed)
-    assert cleaned['rows'][0] == ['2026-06-08', 'Shop, Inc', '1234.50', None, '2000.00']
+    assert cleaned['rows'][0] == ['2026-06-08', 'Shop, Inc', '1234.50', None]
     assert load_csv(cleaned) == {
         'headers': ['Date', 'Transaction', 'Debit', 'Credit'],
         'rows': [
@@ -127,7 +127,7 @@ def test_clean_data_normalizes_one_statement_without_changing_input():
         ],
     }
     assert parsed['rows'] == original_rows
-    assert len(parsed['headers']) == 5
+    assert len(parsed['headers']) == 4
 
 
 def test_read_extracts_invalid_td_cells_before_cleaning():
@@ -143,7 +143,7 @@ def test_cleaning_skips_blank_rows_and_reports_original_csv_lines():
     assert len(cleaned['rows']) == 2
     assert cleaned['rows'][1][3] == '2.00'
     malformed = read_csv(b'\n2026-06-08,Shop,1,,100\n2026-06-09,Refund,2', format='td')
-    with pytest.raises(ValueError, match='Line 3: expected 5 columns'):
+    with pytest.raises(ValueError, match='Line 3: expected 4 columns'):
         clean_data(malformed)
 
 
@@ -169,7 +169,16 @@ def test_pandas_read_preserves_literal_text_and_duplicate_headers():
 
 
 def test_pandas_read_preserves_ragged_rows_and_multiline_error_locations():
-    extracted = read_csv(b'2026-06-08,"Shop\nInc",1,,100\n2026-06-09,Refund,,2,102,extra', format='td')
+    extracted = read_csv(b'2026-06-08,"Shop\nInc",1,,100\n2026-06-09,Refund,2', format='td')
     assert extracted['rows'][0] == ['2026-06-08', 'Shop\nInc', '1', '', '100']
-    with pytest.raises(ValueError, match='Line 3: expected 5 columns; found 6'):
+    with pytest.raises(ValueError, match='Line 3: expected 4 columns; found 3'):
         clean_data(extracted)
+
+
+@pytest.mark.parametrize('trailing', [b'', b',', b',123.45', b',5268********1049', b',account,extra'])
+def test_statement_uses_only_first_four_columns(client, trailing):
+    data = b'2026-10-19,"Shop, ON",8.92,' + trailing + b'\n2026-10-20,Refund,,3'
+    response = client.post('/api/upload_csv', data={'format': 'td'}, files={'file': ('cibc.csv', data)})
+    assert response.status_code == 200
+    assert response.json()['rows'] == [['2026-10-19', 'Shop, ON', '8.92', None], ['2026-10-20', 'Refund', None, '3.00']]
+    assert response.json()['stats']['total_spent'] == '8.92'

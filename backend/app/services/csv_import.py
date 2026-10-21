@@ -8,7 +8,7 @@ from typing import Literal
 import pandas as pd
 from sqlalchemy.orm import Session
 
-TD_HEADERS = ['Date', 'Transaction', 'Debit', 'Credit', 'Balance']
+TD_HEADERS = ['Date', 'Transaction', 'Debit', 'Credit']
 
 
 def read_csv(contents: bytes, format: Literal['csv', 'td'] = 'csv') -> dict:
@@ -81,26 +81,27 @@ def clean_data(data: dict) -> dict:
         if not raw or not any(cell.strip() for cell in raw):
             continue
         line = lines[index] if lines is not None else index + 1
-        if len(raw) != len(headers):
+        if (format == 'td' and len(raw) < 4) or (format != 'td' and len(raw) != len(headers)):
             raise ValueError(f'Line {line}: expected {len(headers)} columns; found {len(raw)}.')
         if format != 'td':
             rows.append(raw.copy())
             continue
-        row = [cell.strip() for cell in raw]
+        # Bank exports may append a balance, account number, or other metadata.
+        row = [cell.strip() for cell in raw[:4]]
         try:
             row[0] = _parse_date(row[0])
         except ValueError:
-            raise ValueError(f'Line {line}: date must use MM/DD/YYYY or YYYY-MM-DD. Upload a TD CSV without a header row.') from None
+            raise ValueError(f'Line {line}: date must use MM/DD/YYYY or YYYY-MM-DD. Upload a bank CSV without a header row.') from None
         if not row[1]:
             raise ValueError(f'Line {line}: transaction name is missing.')
-        for column, label in ((2, 'debit and credit'), (3, 'debit and credit'), (4, 'balance')):
+        for column, label in ((2, 'debit and credit'), (3, 'debit and credit')):
             try:
-                row[column] = _clean_amount(row[column], required=column == 4)
+                row[column] = _clean_amount(row[column])
             except ValueError as error:
                 raise ValueError(f'Line {line}: {label} {error}') from None
         rows.append(row)
     if format == 'td' and not rows:
-        raise ValueError('The TD statement contains no transactions.')
+        raise ValueError('The statement contains no transactions.')
     return {'format': format, 'headers': headers, 'rows': rows}
 
 
@@ -109,8 +110,8 @@ def load_csv(data: dict, session: Session | None = None, *, filename: str | None
     """Build recognized table columns from cleaned data and optionally persist TD rows.
 
     Pass a session, filename and original bytes to save one statement atomically.
-    Without a session this returns the same table for preview. Keep the validated
-    balance in storage for compatibility, but expose Date/Transaction/Debit/Credit.
+    Without a session this returns the same table for preview. Import the
+    first four columns only; trailing bank metadata is ignored.
     Generic CSVs are previewed with their own headers and are not persisted.
     """
     if data['format'] != 'td':

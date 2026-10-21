@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.payments import PaymentRead
 
 
 class BillCreate(BaseModel):
@@ -11,14 +12,6 @@ class BillCreate(BaseModel):
     due_date: date | None = None
     recurring: bool = Field(default=False)
     description: str | None = Field(default=None, max_length=2000)
-
-
-class PaymentRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    id: int
-    amount: Decimal
-    paid_on: date
-    due_date: date | None
 
 
 class PaymentCreate(BaseModel):

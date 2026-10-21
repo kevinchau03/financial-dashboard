@@ -1,5 +1,18 @@
 export type CardTone = 'sky' | 'leaf' | 'sun' | 'rose'
 
+export type PaymentKind = 'bill' | 'debt' | 'goal'
+export type Payment = {
+  id: number
+  kind: PaymentKind
+  target_id: number | null
+  target_name: string
+  amount: string
+  paid_on: string
+  due_date: string | null
+  source: 'manual' | 'paycheque' | 'legacy'
+  recorded_at: string | null
+}
+
 export type Goal = {
   id: number
   name: string
@@ -19,7 +32,7 @@ export type Bill = {
   recurring: boolean
   description: string | null
   is_paid: boolean
-  payments: { id: number; amount: string; paid_on: string; due_date: string | null }[]
+  payments: Payment[]
 }
 
 export type Debt = {
@@ -32,5 +45,5 @@ export type Debt = {
   due_date: string | null
   description: string | null
   is_paid: boolean
-  payments: { id: number; amount: string; paid_on: string; due_date: string | null }[]
+  payments: Payment[]
 }

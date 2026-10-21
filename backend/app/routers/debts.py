@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from app.database import get_session
+from app.services.payments import detach_payments
 from app.models import Debts
 from app.services.common import get_or_404
 from app.services.paycheques import detach_target
@@ -21,6 +22,7 @@ def delete_debt(item_id: int, session: Annotated[Session, Depends(get_session)],
         if debt.remaining_amount != 0:
             raise HTTPException(409, 'This debt still has a remaining balance. Refresh it before resolving.')
     detach_target(session, 'debt', item_id)
+    detach_payments(session, 'debt', item_id)
     session.delete(get_or_404(session, Debts, item_id))
     session.commit()
 

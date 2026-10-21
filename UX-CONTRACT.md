@@ -7,19 +7,20 @@
 | Form | AppForm and AutoTextarea | frontend/src/components/AppForm.tsx | Creation, inline edit, contribution, payment, account | Build, lint, browser invalid submit |
 | Date | Native date input | Existing ISO-date API fields and billStatus.ts | Optional target date, monthly bill due date, payment date | Browser field and billStatus tests |
 | Select/Listbox | Native select | AccountForm.tsx | OS-owned account type popup | Sibling browser inspection |
-| Scrollbar | Global CSS baseline | frontend/src/styles/budget.css | Native document and modal scrolling | Strict audit and narrow browser |
+| Scrollbar | Global CSS baseline | frontend/src/index.css | Native document, modal and activity table scrolling | Strict audit and narrow browser |
 | Toast | Notice and useNotice | frontend/src/hooks/useNotice.ts | Inline three-second success overlay | Existing implementation and browser |
 | CRUD | Existing feature components and DeleteItem | Backend API contracts | Create modal, inline edit, named delete confirmation | Build and existing domain tests |
 | Dialog | Modal | frontend/src/components/Modal.tsx | Create, delete confirmation, discard changes | Keyboard, Escape and focus restoration |
 | Unsaved changes | UnsavedChanges and form snapshots | frontend/src/unsavedForms.ts | Link navigation, inline Cancel, browser unload | Browser pending contribution navigation |
 | Empty state | EmptyState | frontend/src/components/EmptyState.tsx | Goal, debt, bill starting actions | Browser empty lists |
+| Read-only resource | useDashboardResource | Resource URL and attempt identify current data | Abort on change; 15-second timeout; explicit Retry | Loading/error/recovery browser checks |
 | Statement library | StatementLibrary and StatementDetail | backend/statements.py | Paginated library, individual summary, original CSV download | Statement API tests and browser reopen/reload |
 
 ## Behavior
 
 StatCard and DashboardPanel accept optional CardTone variants (sky, leaf, sun, rose). Tones identify button and highlight accents; card surfaces and ordinary typography remain neutral, with shared tokens owned by index.css and scoped rules in colors.css. Navigation, forms, loading/error states and financial calculations retain their existing behavior.
 
-Dashboard is the default app view for an empty URL hash; explicit `#/` remains the landing page and the MyBudgetPro brand links there. The sidebar orders Dashboard, Budget, Accounts, Your Budget Wrapped. DashboardPanel owns overview section loading/error/retry states and useDashboardResource cancels superseded reads. Dashboard shows bounded account, goal, debt and bill previews, with links to their management pages. Actual recorded balances exclude planned paycheque allocations; accounts and goal savings are never combined. Bill reminders include recurring next occurrences even while the preceding occurrence is paid, and exclude paid one-time bills. Spending uses only the latest uploaded statement with its filename and date range; the summary endpoint does not fetch transaction rows. Budget owns paycheque plans, goal/debt editing and bill payments, with overview analytics moved to Dashboard. No authentication, currency, categorization or cross-statement consolidation rules are introduced.
+Dashboard is the default app view for an empty URL hash; explicit `#/` remains the landing page and the MyBudgetPro brand links there. The sidebar orders Dashboard, Budget (with Paycheque planner), Accounts, Activity history, Your Budget Wrapped. DashboardPanel owns overview section loading/error/retry states and useDashboardResource cancels superseded reads. Dashboard shows bounded account, goal, debt and bill previews, with links to their management pages. Actual recorded balances exclude planned paycheque allocations; accounts and goal savings are never combined. Bill reminders include recurring next occurrences even while the preceding occurrence is paid, and exclude paid one-time bills. Spending uses only the latest uploaded statement with its filename and date range; the summary endpoint does not fetch transaction rows. Budget owns paycheque plans, goal/debt editing and bill payments, with overview analytics moved to Dashboard. No authentication, currency, categorization or cross-statement consolidation rules are introduced.
 
 The current React/Vite hash routes and APIs remain authoritative. Creation returns to its list and announces success. Goal updates record contributions separately from goal edits. Debt and bill payments record history without sending money. Recurring bills follow the existing monthly due-date calculation. Bills analytics sums all recorded bill amounts, so the summary label is Recorded bills.
 
@@ -47,13 +48,13 @@ remains owned by CsvUpload with the existing 5 MB CSV validation.
 
 ## Verification boundaries
 
-Static audit is a contract check, not runtime proof. Browser checks use existing local data and avoid changing balances or deleting records. Existing bill and planning domain tests cover calculations. Creation/save API failure and payment writes are not exercised against the user's live database during this visual redesign.
+Static audit is a contract check, not runtime proof. Activity browser checks use a disposable database and cover a contribution recorded through Budget, filtering, pagination, loading, empty states, connection failure and Retry, keyboard focus, and desktop/narrow layouts. They do not change the user's saved financial data. Backend tests cover migration, rollback, balances, concurrency and retention.
 
 Paycheque allocation now includes accounts using the existing grouped numeric fields and record dialog. Account deposits update recorded balances only when completed; linked goal deposits update the account and earmarked goal together; each dollar is allocated once. Paycheque deletion uses DeleteItem confirmation, removing its plans/history while preserving completed savings, balances and payments. Policy source: backend/app/services/paycheques.py.
 
 Account-backed goals: GoalAccountSelect reuses native select, AppForm and existing feedback. Optional links preserve older goals. Linked current_amount earmarks existing account money; direct goal additions assign existing funds and cannot exceed the account balance. Paycheque completion records a new deposit in both linked goal and account atomically. Account balance edits cannot reduce the balance below earmarked funds. Unlinking/deleting a goal releases its earmark without changing account balance. Source: backend/app/services/goals.py and backend/app/services/paycheques.py.
 
-Goal card summaries show the linked account, or No linked account, without expansion. Paid-off debts reuse DeleteItem with a Resolve debt variant and explicit payment-history deletion confirmation. The backend rechecks zero remaining balance before resolution. Source: backend/app/routers/debts.py.
+Goal card summaries show the linked account, or No linked account, without expansion. Paid-off debts reuse DeleteItem with a Resolve debt variant and explicit confirmation that recorded payments remain in Activity history. The backend rechecks zero remaining balance before resolution. Source: backend/app/routers/debts.py.
 
 CollapsibleItem supports an optional cardAction outside the details disclosure. Paid-off debts show Resolve debt there even while collapsed, with the same DeleteItem confirmation and backend balance guard.
 
@@ -70,3 +71,31 @@ Wrapped insight details: the largest transaction returns amount, debit/credit ki
 Dashboard uses an open ledger layout: four unboxed totals, divided account/bill lists, borderless goal/debt progress sections, and one neutral latest-statement surface. Copy is concise; goal/account overlap and recorded-bill scope remain explicit. The main action opens the paycheque planner. Existing resources, bounded previews, retries and financial calculations are unchanged. overview.css owns dashboard layout and container breakpoints (1000/640/420px), reusing index.css tokens and Noto Sans.
 
 Dashboard hierarchy: goal/debt progress leads the main column with larger headings and thicker progress tracks. Latest statement sits at upper right with a sky-filled “View Your Budget Wrapped” link to that statement. Accounts and a compact three-bill preview follow below. Below 680px the reading order is progress, statement, accounts, bills; progress columns stack below 440px. Existing totals and retries remain.
+
+## Activity history
+
+Personal budgeting records for the prototype's single shared workspace. English copy, CAD amounts and browser locale formatting. Payment dates are calendar dates; recording timestamps are stored in UTC and displayed with the local timezone. No financial institution integration or money movement. Accessibility target: WCAG 2.2 AA.
+
+### Business-context sources
+
+| Domain | Source | Reviewed |
+|---|---|---|
+| Shared data and permissions | backend/README.md: all records are shared; no user accounts | 2026-10-20 |
+| Payment lifecycle, migration and retention | backend/README.md: Unified payment ledger | 2026-10-20 |
+| Balance constraints and atomic updates | backend/app/services/debts.py, backend/app/services/goals.py, backend/app/services/paycheques.py | 2026-10-20 |
+| Visual identity and market/content conventions | DESIGN.md | 2026-10-20 |
+
+### Dataset navigation
+
+Activity uses GET /api/payments, 20 records per page, descending payment date then descending ID. Kind and page persist in the hash query. Changing kind resets to page one. The server clamps pages after data changes. Browser Back restores the previous filter/page. Counts describe the filtered dataset. Empty and failed results have distinct text and a recovery action; loading reserves a minimum result area. History scrolls horizontally inside its named keyboard-focusable region on narrow screens; document scrolling remains natural. Full names wrap and amounts remain readable.
+
+### Activity flow ledger
+
+| Operation | Pending | Success | Failure recovery | Source |
+|---|---|---|---|---|
+| Record payment/contribution | Shared form disables duplicate activation | Update owner and show its existing notice; Activity reads committed ledger | Keep values and inline error | Payment/contribution endpoints; DESIGN.md |
+| Complete allocation | Wait for server; no optimistic financial update | Balance and one payment saved together | Keep pending allocation; explicit retry | backend/app/services/paycheques.py |
+| Delete target / resolve debt | DeleteItem + Modal confirmation | Remove target; retain named activity | Keep dialog and inline error | backend/README.md: Unified payment ledger |
+| Filter/page activity | Abort old request; announce loading | Render matching page and range; page changes focus ledger heading | Persistent alert and Retry | backend/app/routers/payments.py |
+
+Routes use usePage for document titles and main focus. Activity filters are navigation links with current state; pagination uses labelled buttons and a live range. Existing Modal owns focus trap, Escape and restoration; Notice owns transient feedback. Shared CSS owns focus, hover, pressed, disabled, reduced motion and global scrollbars.

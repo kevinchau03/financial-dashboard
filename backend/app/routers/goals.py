@@ -1,9 +1,11 @@
+from datetime import date
 from typing import Annotated
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from app.database import get_session
+from app.services.payments import detach_payments, add_payment
 from app.models import FinancialGoal
 from app.services.common import get_or_404
 from app.services.paycheques import detach_target
@@ -30,6 +32,7 @@ def create_goal(goal: GoalCreate, session: Annotated[Session, Depends(get_sessio
 @router.delete("/api/goals/{item_id}", status_code=204)
 def delete_goal(item_id: int, session: Annotated[Session, Depends(get_session)]):
     detach_target(session, 'goal', item_id)
+    detach_payments(session, 'goal', item_id)
     session.delete(get_or_404(session, FinancialGoal, item_id))
     session.commit()
 
@@ -64,5 +67,6 @@ def add_to_goal(goal_id: int, contribution: GoalContribution, session: Annotated
     if result.rowcount == 0:
         get_or_404(session, FinancialGoal, goal_id)
         raise HTTPException(422, "This addition would exceed the maximum supported balance.")
+    add_payment(session, kind='goal', target=saved, amount=contribution.amount, paid_on=date.today())
     session.commit()
     return get_or_404(session, FinancialGoal, goal_id)

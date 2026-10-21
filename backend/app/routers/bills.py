@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from app.database import get_session
+from app.services.payments import detach_payments
 from app.models import Bills
 from app.services.common import get_or_404
 from app.services import bills
@@ -29,6 +30,7 @@ def list_bills(session: Annotated[Session, Depends(get_session)]):
 
 @router.delete("/api/bills/{item_id}", status_code=204)
 def delete_bill(item_id: int, session: Annotated[Session, Depends(get_session)]):
+    detach_payments(session, 'bill', item_id)
     session.delete(get_or_404(session, Bills, item_id))
     session.commit()
 

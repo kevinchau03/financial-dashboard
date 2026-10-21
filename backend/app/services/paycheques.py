@@ -6,7 +6,8 @@ from fastapi import HTTPException
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.models import Account, Paycheque, PaychequeAllocation, PaychequeAllocationBatch, FinancialGoal, Debts, DebtPayment
+from app.models import Account, Paycheque, PaychequeAllocation, PaychequeAllocationBatch, FinancialGoal, Debts, Payment
+from app.services.payments import add_payment
 from app.schemas.paycheques import AllocationCreate, PaychequeCreate, AllocationBatchCreate, AllocationComplete
 
 MAX_BALANCE = Decimal('999999999999.99')
@@ -172,6 +173,8 @@ def complete(paycheque_id: int, allocation_id: int, payload: AllocationComplete,
             ).values(current_amount=func.round(FinancialGoal.current_amount + money, 2)))
             if result.rowcount == 0:
                 raise HTTPException(422, 'The goal is unavailable or this addition would exceed the supported balance. Cancel the allocation to release its money.')
+            add_payment(session, kind='goal', target=goal, amount=money, paid_on=payload.completed_on,
+                        source='paycheque', allocation_id=allocation.id)
         elif allocation.kind == 'account':
             result = session.execute(update(Account).where(
                 Account.id == allocation.account_id, Account.balance <= MAX_BALANCE - money,
@@ -186,7 +189,8 @@ def complete(paycheque_id: int, allocation_id: int, payload: AllocationComplete,
             if result.rowcount == 0:
                 raise HTTPException(422, 'The debt is unavailable or the allocation exceeds its current remaining balance. Cancel it and allocate a smaller amount.')
             debt = session.get(Debts, allocation.debt_id)
-            session.add(DebtPayment(debt_id=debt.id, amount=money, paid_on=payload.completed_on, due_date=debt.due_date))
+            add_payment(session, kind='debt', target=debt, amount=money, paid_on=payload.completed_on,
+                        source='paycheque', allocation_id=allocation.id)
         session.commit()
         return get_paycheque(session, paycheque_id)
     except Exception:
@@ -233,6 +237,9 @@ def remove(paycheque_id: int, session: Session):
                         .values(allocated_cents=Paycheque.allocated_cents))
         get_paycheque(session, paycheque_id)
         session.execute(delete(PaychequeAllocationBatch).where(PaychequeAllocationBatch.paycheque_id == paycheque_id))
+        session.execute(update(Payment).where(Payment.allocation_id.in_(
+            select(PaychequeAllocation.id).where(PaychequeAllocation.paycheque_id == paycheque_id)
+        )).values(allocation_id=None))
         session.execute(delete(PaychequeAllocation).where(PaychequeAllocation.paycheque_id == paycheque_id))
         session.execute(delete(Paycheque).where(Paycheque.id == paycheque_id))
         session.commit()

@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from app.schemas.bills import PaymentRead
+from app.schemas.payments import PaymentRead
 
 
 class DebtCreate(BaseModel):

@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.database import engine
 from app.startup import initialize_database
-from app.routers import accounts, goals, bills, debts, paycheques, statements, analytics, uploads
+from app.routers import accounts, goals, bills, debts, paycheques, statements, analytics, uploads, payments
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -10,7 +10,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-for router_module in (accounts, goals, bills, debts, paycheques, statements, analytics, uploads):
+for router_module in (accounts, goals, bills, debts, paycheques, statements, analytics, uploads, payments):
     app.include_router(router_module.router)
 
 @app.get("/")

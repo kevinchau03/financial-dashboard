@@ -2,7 +2,8 @@ from datetime import date
 from fastapi import HTTPException
 from sqlalchemy import update, func
 from sqlalchemy.orm import Session
-from app.models import Debts, DebtPayment
+from app.models import Debts
+from app.services.payments import add_payment
 from app.services.common import get_or_404
 from app.schemas.debts import DebtPaymentCreate
 
@@ -19,7 +20,7 @@ def record_debt_payment(debt_id: int, payment: DebtPaymentCreate, session: Sessi
         get_or_404(session, Debts, debt_id)
         raise HTTPException(422, "Payment cannot exceed the remaining debt balance.")
     debt = get_or_404(session, Debts, debt_id)
-    session.add(DebtPayment(debt_id=debt_id, amount=payment.amount, paid_on=payment.paid_on, due_date=debt.due_date))
+    add_payment(session, kind='debt', target=debt, amount=payment.amount, paid_on=payment.paid_on)
     session.commit()
     session.refresh(debt)
     return debt

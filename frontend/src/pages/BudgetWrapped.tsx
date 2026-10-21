@@ -57,11 +57,11 @@ export default function BudgetWrapped() {
   return <div className="wrapped-page">
     <h1 ref={pageHeading} tabIndex={-1}>Your Budget Wrapped</h1>
     {statementId !== null ? <StatementDetail key={statementId} statementId={statementId} /> : <>
-      <p className="wrapped-intro">Your statements, one at a time. Save a TD CSV and revisit its spending summary whenever you like.</p>
+      <p className="wrapped-intro">Your statements, one at a time. Save a bank CSV and revisit its spending summary whenever you like.</p>
       <StatementLibrary busy={loading} />
       <section aria-labelledby="upload-heading" aria-busy={loading}>
         <h2 id="upload-heading">Upload a statement</h2>
-        <p className="upload-help">Use a TD CSV with no header row: date (MM/DD/YYYY or YYYY-MM-DD), transaction, debit, credit, and balance.</p>
+        <p className="upload-help">Use a bank CSV with no header row: date (MM/DD/YYYY or YYYY-MM-DD), transaction name, debit, and credit. Extra columns such as balances or account numbers are ignored.</p>
         <CsvUpload disabled={loading} onFileSelect={selected => { setFile(selected); setError('') }} />
         <div className="actions"><button type="button" disabled={!file || loading} onClick={upload}>{loading ? 'Saving…' : 'Save statement'}</button></div>
         {error && <p role="alert">{error}</p>}

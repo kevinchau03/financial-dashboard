@@ -110,7 +110,7 @@ Paycheque allocation now includes accounts using the existing grouped numeric fi
 
 Account-backed goals: GoalAccountSelect reuses native select, AppForm and existing feedback. Optional links preserve older goals. Linked current_amount earmarks existing account money; direct goal additions assign existing funds and cannot exceed the account balance. Paycheque completion records a new deposit in both linked goal and account atomically. Account balance edits cannot reduce the balance below earmarked funds. Unlinking/deleting a goal releases its earmark without changing account balance. Source: backend/app/services/goals.py and backend/app/services/paycheques.py.
 
-Goal card summaries show the linked account, or No linked account, without expansion. Paid-off debts reuse DeleteItem with a Resolve debt variant and explicit payment-history deletion confirmation. The backend rechecks zero remaining balance before resolution. Source: backend/app/routers/debts.py.
+Goal card summaries show the linked account, or No linked account, without expansion. Paid-off debts reuse DeleteItem with a Resolve debt variant and explicit confirmation that recorded payments remain in Activity history. The backend rechecks zero remaining balance before resolution. Source: backend/app/routers/debts.py.
 
 CollapsibleItem supports an optional cardAction outside the details disclosure. Paid-off debts show Resolve debt there even while collapsed, with the same DeleteItem confirmation and backend balance guard.
 
@@ -128,3 +128,16 @@ Wrapped insight details: the largest transaction returns amount, debit/credit ki
 Dashboard uses an open ledger layout: four unboxed totals, divided account/bill lists, borderless goal/debt progress sections, and one neutral latest-statement surface. Copy is concise; goal/account overlap and recorded-bill scope remain explicit. The main action opens the paycheque planner. Existing resources, bounded previews, retries and financial calculations are unchanged. overview.css owns dashboard layout and container breakpoints (1000/640/420px), reusing index.css tokens and Noto Sans.
 
 Dashboard hierarchy: goal/debt progress leads the main column with larger headings and thicker progress tracks. Latest statement sits at upper right with a sky-filled “View Your Budget Wrapped” link to that statement. Accounts and a compact three-bill preview follow below. Below 680px the reading order is progress, statement, accounts, bills; progress columns stack below 440px. Existing totals and retries remain.
+
+
+Activity history lives at #/activity and follows the open ledger language: a quiet
+header, linked kind filters, and a semantic table whose saved target name leads
+each row. Small labelled sage/rose/gold markers distinguish goal/debt/bill records;
+financial amounts use tabular numerals. All colours come from index.css tokens.
+styles/activity.css owns this page's layout without changing the app shell.
+Native link navigation preserves kind/page in the URL; 20-record server pagination,
+shared abortable resource loading/retry, separate empty states and a named horizontal
+scroll region keep the ledger usable on narrow screens. Payment dates are date-only;
+recording timestamps include the viewer's timezone. Deleted targets retain readable
+names. DeleteItem confirmations explain history retention. The canonical behavior
+map is maintained in UX-CONTRACT.md.

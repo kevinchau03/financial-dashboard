@@ -100,7 +100,8 @@ def test_existing_database_upgrade(tmp_path, monkeypatch):
     for _ in range(2):
         with TestClient(main.app):
             pass
-    assert 'bill_payments' in inspect(engine).get_table_names()
+    assert 'payments' in inspect(engine).get_table_names()
+    assert 'bill_payments' not in inspect(engine).get_table_names()
     with engine.connect() as connection:
         assert connection.execute(text('SELECT name, is_paid FROM bills')).one() == ('Existing', 0)
     engine.dispose()

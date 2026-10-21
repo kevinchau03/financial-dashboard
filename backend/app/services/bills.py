@@ -2,12 +2,16 @@ from datetime import date
 from calendar import monthrange
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from app.models import Bills, BillPayment
+from sqlalchemy import update
+from app.models import Bills
+from app.services.payments import add_payment
 from app.services.common import get_or_404
 from app.schemas.bills import PaymentCreate
 
 def record_payment(bill_id: int, payment: PaymentCreate, session: Session):
+    session.execute(update(Bills).where(Bills.id == bill_id).values(is_paid=Bills.is_paid))
     bill = get_or_404(session, Bills, bill_id)
+    session.refresh(bill)
     if bill.is_paid:
         raise HTTPException(409, "This bill is already paid. Set a new due date to record another payment.")
     if payment.paid_on > date.today():
@@ -27,7 +31,7 @@ def record_payment(bill_id: int, payment: PaymentCreate, session: Session):
             raise HTTPException(422, "Only recurring bills can have a next due date.")
         if payment.next_due_date <= max(payment.paid_on, bill.due_date or payment.paid_on):
             raise HTTPException(422, "Next due date must be after the payment date and current due date.")
-    session.add(BillPayment(bill_id=bill.id, amount=payment.amount, paid_on=payment.paid_on, due_date=bill.due_date))
+    add_payment(session, kind='bill', target=bill, amount=payment.amount, paid_on=payment.paid_on)
     bill.is_paid = next_due_date is None
     if next_due_date is not None:
         if payment.next_due_date is not None:

@@ -32,7 +32,9 @@ def save_statement(session: Session, filename: str, contents: bytes, rows: list[
                 statement_id=statement.id,
                 date=date.fromisoformat(row[0]),
                 description=row[1], debit_cents=cents(row[2]),
-                credit_cents=cents(row[3]), balance_cents=cents(row[4]),
+                credit_cents=cents(row[3]),
+                # Legacy required column; no balance is imported or inferred.
+                balance_cents=0,
             ))
         session.commit()
     except IntegrityError:

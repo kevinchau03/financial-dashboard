@@ -42,6 +42,6 @@ export default function CsvUpload({ onFileSelect, disabled = false }: CsvUploadP
         <button type="button" className="secondary" disabled={disabled} onClick={removeFile}>Remove file</button>
       </div>}
     </div>
-    <p className="upload-help">Upload your TD statement to save its transactions and view its contents.</p>
+    <p className="upload-help">Upload your bank statement to save its transactions and view its contents.</p>
   </div>
 }

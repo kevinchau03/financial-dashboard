@@ -8,6 +8,7 @@ export const pages = [
   { path: '#/budget', title: 'Budget' },
   { path: '#/budget/paycheques', title: 'Paycheque planner' },
   { path: '#/accounts', title: 'Accounts' },
+  { path: '#/activity', title: 'Activity history' },
   { path: '#/budget-wrapped', title: 'Your Budget Wrapped' },
 ] as const
 
