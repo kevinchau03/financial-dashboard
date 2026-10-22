@@ -6,6 +6,15 @@ from app import models  # Register all tables before creating metadata.
 
 def initialize_database(engine):
     Base.metadata.create_all(engine)
+    payment_columns = {column['name'] for column in inspect(engine).get_columns('payments')}
+    with engine.begin() as connection:
+        for name, definition in {
+            'undo_state': 'JSON',
+            'undo_account_id': 'INTEGER REFERENCES accounts(id) ON DELETE SET NULL',
+            'undone_at': 'DATETIME',
+        }.items():
+            if name not in payment_columns:
+                connection.execute(text(f'ALTER TABLE payments ADD COLUMN {name} {definition}'))
     if 'account_id' not in {column['name'] for column in inspect(engine).get_columns('financial_goals')}:
         with engine.begin() as connection:
             connection.execute(text('ALTER TABLE financial_goals ADD COLUMN account_id INTEGER REFERENCES accounts(id)'))

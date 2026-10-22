@@ -151,3 +151,13 @@ Dashboard simplification: three recorded totals (accounts, saved toward goals, r
 Budget Wrapped now opens saved files directly into their summary instead of an invitation gate. Play Budget Wrapped retains the existing optional six-screen experience and summary return/focus. The library is an open list with latest-upload label and a supporting upload panel; CSV format guidance is disclosed on request. Summary shows money in, money out and net movement (credits minus debits using sumAmounts), explicitly file-scoped and not savings. Review transactions focuses and scrolls to the table heading without changing the route. Existing uploads, 20-file/50-row paging, original-file downloads, abort/retry, and backend insights remain. statements.css owns layout at container widths 760/480px using shared tokens.
 
 The primary accent is soft meadow green #A8BE91, with hover #9AB381 and dark labels #293E48. Supporting accent surfaces use pale meadow #E9EEDF. This replaces sunset amber while retaining cream and dusty-blue foundations. Runtime owner: index.css.
+
+
+Activity payment rows include a quiet outlined Undo action with a decorative curved
+back arrow and a visible label. UndoPayment reuses Modal for named-amount confirmation,
+busy close prevention, focus restoration and inline errors, and Notice/useNotice for
+confirmed success. Existing surface, border, danger and focus tokens own all states;
+no palette changes. Disabled undo actions show their explanation in the row. The
+semantic Actions column remains reachable through the existing horizontal scroll
+region on narrow screens. Successful undo refetches server totals, clamps paging
+and focuses the ledger heading. No optimistic financial changes are shown.

@@ -103,3 +103,17 @@ Routes use usePage for document titles and main focus. Activity filters are navi
 Dashboard simplification: three recorded totals (accounts, saved toward goals, remaining debt), one conditional next-payment/overdue reminder, and three-item goal/debt previews. Unfinished goals lead via a stable copied sort; completed goals remain in the full view. Statement and compact bills share a right rail; accounts are a supporting two-column list. Mobile stacks naturally with account total leading. Recorded bills aggregate is removed from this overview to avoid competing with date-specific reminders; Budget remains its owner. Existing resources, error/retry and money semantics are preserved.
 
 Budget Wrapped now opens saved files directly into their summary instead of an invitation gate. Play Budget Wrapped retains the existing optional six-screen experience and summary return/focus. The library is an open list with latest-upload label and a supporting upload panel; CSV format guidance is disclosed on request. Summary shows money in, money out and net movement (credits minus debits using sumAmounts), explicitly file-scoped and not savings. Review transactions focuses and scrolls to the table heading without changing the route. Existing uploads, 20-file/50-row paging, original-file downloads, abort/retry, and backend insights remain. statements.css owns layout at container widths 760/480px using shared tokens.
+
+
+### Undo payment
+
+Source: backend/README.md, Undo a payment; backend/app/services/payments.py.
+UndoPayment owns the visible labelled arrow button and reuses Modal plus the shared
+notice system. Confirm the named target, amount and payment date before DELETE.
+Pending blocks repeat submit and modal close; failure retains the confirmation
+and server explanation. An uncertain network result permits an idempotent retry.
+Success removes the active record after server acknowledgement, refetches the
+filtered page, preserves its URL state and moves focus to the ledger heading.
+The server clamps a now-empty last page. Missing targets and incomplete historic
+undo context have disabled actions with visible reasons. Schedule/balance conflicts
+remain server-owned and return 409 without partial changes. Undo sends no money.

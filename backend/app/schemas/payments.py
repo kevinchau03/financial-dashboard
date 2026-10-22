@@ -17,6 +17,7 @@ class PaymentRead(BaseModel):
     due_date: date | None
     source: Literal['manual', 'paycheque', 'legacy']
     recorded_at: datetime | None
+    undo_unavailable_reason: str | None = None
 
     @field_serializer('recorded_at')
     def serialize_recorded_at(self, value: datetime | None) -> str | None:

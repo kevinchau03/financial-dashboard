@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary, CheckConstraint, Index
+from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary, CheckConstraint, Index, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -132,7 +132,7 @@ class Bills(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_paid: Mapped[bool] = mapped_column(default=False, server_default="0")
     recurrence_day: Mapped[int | None] = mapped_column(nullable=True)
-    payments: Mapped[list['Payment']] = relationship(order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
+    payments: Mapped[list['Payment']] = relationship(primaryjoin='and_(Bills.id == Payment.bill_id, Payment.undone_at.is_(None))', order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
 
 
 class Debts(Base):
@@ -145,14 +145,14 @@ class Debts(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     interest_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    payments: Mapped[list['Payment']] = relationship(order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
+    payments: Mapped[list['Payment']] = relationship(primaryjoin='and_(Debts.id == Payment.debt_id, Payment.undone_at.is_(None))', order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
 
     @property
     def remaining_amount(self) -> Decimal:
         return self.amount - self.current_amount
 
 class Payment(Base):
-    """Completed records only; target names survive rename/deletion.
+    """Completed records and undo tombstones; names survive rename/deletion.
 
     Nullable, real foreign keys retain referential integrity without deleting history.
     An allocation can produce at most one payment. No balance is inferred from this ledger.
@@ -181,7 +181,19 @@ class Payment(Base):
     allocation_id: Mapped[int | None] = mapped_column(ForeignKey('paycheque_allocations.id', ondelete='SET NULL'), unique=True)
     # Legacy history has no known recording timestamp; never invent one.
     recorded_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    undo_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    undo_account_id: Mapped[int | None] = mapped_column(ForeignKey('accounts.id', ondelete='SET NULL'), nullable=True)
+    undone_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     @property
     def target_id(self) -> int | None:
         return {'bill': self.bill_id, 'debt': self.debt_id, 'goal': self.goal_id}[self.kind]
+
+    @property
+    def undo_unavailable_reason(self) -> str | None:
+        if self.target_id is None:
+            return 'The original item has been deleted. Its history is retained.'
+        if self.undo_state is None and (self.source == 'legacy' or self.kind == 'bill' or
+                                       (self.kind == 'goal' and self.source == 'paycheque')):
+            return 'This older payment has no complete undo details.'
+        return None

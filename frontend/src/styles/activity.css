@@ -37,6 +37,12 @@
 .activity-pagination button { min-height: 44px; }
 .activity-pagination button:disabled { cursor: not-allowed; }
 .activity-footnote { max-width: 85ch; }
+.activity-undo { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; white-space: nowrap; border: 1px solid var(--border); border-radius: 7px; }
+.activity-undo svg { width: 18px; height: 18px; flex: none; }
+.activity-undo:active:not(:disabled) { transform: translateY(1px); }
+.activity-undo:disabled { cursor: not-allowed; }
+.activity-undo-confirm { min-width: 145px; }
+.activity-table .activity-undo-reason { min-width: 150px; max-width: 25ch; }
 @container (max-width: 580px) {
   .activity-filters { gap: 4px; }
   .activity-filters a { padding: 10px 12px; }

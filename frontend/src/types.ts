@@ -11,6 +11,7 @@ export type Payment = {
   due_date: string | null
   source: 'manual' | 'paycheque' | 'legacy'
   recorded_at: string | null
+  undo_unavailable_reason: string | null
 }
 
 export type Goal = {

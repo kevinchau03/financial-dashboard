@@ -265,7 +265,7 @@ The shared writer does not commit: calling workflows own the transaction.
 Deleting/resolving a bill, debt or goal now retains its payment history and original
 name, clearing its target link. Deleting a paycheque clears payment allocation links
 and preserves recorded activity and balances. History is not silently rewritten on
-rename. No ledger edit/delete API is exposed. Opening balances are not payments.
+rename. Undo is available through DELETE /api/payments/{id}; ledger records are retained internally after reversal. Opening balances are not payments.
 
 Startup runs versioned migration `20261020_unified_payments` before serving requests.
 It copies all old bill/debt payments, backfills completed goal allocations still in
@@ -283,3 +283,35 @@ stopping older app processes so they cannot write to the retired tables.
 SQLite foreign keys are enabled on connection. Migration, rollback, fixed-precision
 amounts, concurrency, allocation retries, pagination, target/plan deletion and
 foreign-key/check constraints are covered in `tests/test_payments.py`.
+
+
+## Undo a payment
+
+`DELETE /api/payments/{payment_id}` calls `app.services.payments.delete_payment`.
+It returns 204 on success or a repeated undo, 404 for an unknown ID, and 409 when
+reversal cannot preserve the current financial state. It reverses recorded debt
+payments or goal additions, restores a bill's prior schedule, and hides the payment
+from activity and nested bill/debt payment lists. All changes commit together.
+`undone_at` retains an internal tombstone so retries and concurrent requests cannot
+reverse balances twice or accidentally target a reused payment ID.
+
+New payments save undo context. Direct goal additions release earmarked funds
+without changing an account balance. Paycheque goal additions reverse the deposit
+in the original account, even after relinking the goal; reversal is rejected when
+that money is no longer unassigned after removing the goal contribution. A linked
+completed allocation is cancelled and its reserved cents are released to its
+paycheque. Stale completion retries then return 409. If the plan was deleted,
+remaining target/account effects can still be reversed without recreating the plan.
+
+Bill payments must be undone in reverse recording order. Original paid status,
+due date, recurrence type and recurrence day are restored only when the bill still
+matches the saved post-payment schedule; subsequent manual schedule edits block
+undo. Existing month-end and next-date override behavior is preserved.
+
+Deleted targets cannot be recreated through undo. Older bill/legacy records and
+paycheque goal records without complete undo context are rejected rather than
+inferring an account or schedule. Older known manual debt/goal records can still
+be reversed. `undo_unavailable_reason` gives the activity page an explanation for
+a disabled action. Dynamic balance/schedule conflicts are checked by the service.
+Startup adds nullable undo context/account/timestamp columns to existing SQLite
+payment tables without fabricating snapshots or altering balances.

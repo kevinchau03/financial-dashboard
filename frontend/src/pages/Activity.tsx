@@ -4,6 +4,9 @@ import { activityFilters, activityHref, paymentDate } from '../activity'
 import type { ActivityPage } from '../activity'
 import useHash from '../hooks/useHash'
 import useDashboardResource from '../hooks/useDashboardResource'
+import UndoPayment from '../components/UndoPayment'
+import Notice from '../components/Notice'
+import useNotice from '../hooks/useNotice'
 import '../styles/activity.css'
 
 const filters = [ ['all', 'All activity'], ['debt', 'Debts'], ['goal', 'Goals'], ['bill', 'Bills'] ] as const
@@ -11,6 +14,7 @@ const kindLabels = { bill: 'Bill payment', debt: 'Debt payment', goal: 'Goal con
 const sourceLabels = { manual: 'Direct entry', paycheque: 'Paycheque allocation', legacy: 'Previous payment history' }
 
 export default function Activity() {
+  const [notice, showNotice] = useNotice()
   const { kind, page } = activityFilters(useHash())
   const params = new URLSearchParams({ page: String(page), page_size: '20' })
   if (kind !== 'all') params.set('kind', kind)
@@ -33,6 +37,7 @@ export default function Activity() {
       <a className="activity-record-link" href="#/budget">Record a payment <span aria-hidden="true">↗</span></a>
     </div>
     <p className="activity-explanation">Debt payments, goal contributions and paid bills. Only completed records appear here; planned allocations stay in your paycheque planner.</p>
+    <Notice message={notice} />
     <nav className="activity-filters" aria-label="Filter activity">
       {filters.map(([value, label]) => <a key={value} href={activityHref(value)} aria-current={kind === value ? 'true' : undefined}>{label}</a>)}
     </nav>
@@ -52,12 +57,17 @@ export default function Activity() {
       {data && data.items.length > 0 && <div className="activity-table-scroll" tabIndex={0} role="region" aria-label="Payment history; scroll horizontally on small screens">
         <table className="activity-table">
           <caption className="sr-only">Completed payments and contributions, newest payment date first. Amounts in Canadian dollars.</caption>
-          <thead><tr><th scope="col">Payment date</th><th scope="col">Activity</th><th scope="col">Recorded through</th><th scope="col" className="activity-amount">Amount</th></tr></thead>
+          <thead><tr><th scope="col">Payment date</th><th scope="col">Activity</th><th scope="col">Recorded through</th><th scope="col" className="activity-amount">Amount</th><th scope="col">Actions</th></tr></thead>
           <tbody>{data.items.map(payment => <tr key={payment.id}>
             <td><time dateTime={payment.paid_on}>{paymentDate(payment.paid_on)}</time></td>
             <td><span className={`activity-kind activity-kind-${payment.kind}`}>{kindLabels[payment.kind]}</span><strong className="activity-target">{payment.target_name}</strong>{payment.target_id === null && <small>Item deleted · history retained</small>}</td>
             <td><span>{sourceLabels[payment.source]}</span>{payment.recorded_at && <small>Recorded <time dateTime={payment.recorded_at}>{new Date(payment.recorded_at).toLocaleString(undefined, { timeZoneName: 'short' })}</time></small>}</td>
             <td className="activity-amount">{amount(payment.amount)}</td>
+            <td><UndoPayment payment={payment} onUndo={() => {
+              showNotice(`Payment for ${payment.target_name} undone.`)
+              retry()
+              requestAnimationFrame(() => heading.current?.focus({ preventScroll: true }))
+            }} /></td>
           </tr>)}</tbody>
         </table>
       </div>}
