@@ -1,5 +1,7 @@
 # UI contract
 
+Learn (`#/learn`) is public, like the landing page, and renders while authentication is loading or unavailable. Landing links directly to Learn. Its setup and feature links retain protected destinations: signed-out visitors must authenticate before accessing financial tools. Source: user request to make Learn accessible before sign-in.
+
 ## Canonical UI Map
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |

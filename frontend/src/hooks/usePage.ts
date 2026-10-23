@@ -10,6 +10,7 @@ export const pages = [
   { path: '#/accounts', title: 'Accounts' },
   { path: '#/activity', title: 'Activity history' },
   { path: '#/budget-wrapped', title: 'Your Budget Wrapped' },
+  { path: '#/learn', title: 'Learn' },
 ] as const
 
 export default function usePage() {

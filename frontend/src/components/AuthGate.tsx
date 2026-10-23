@@ -7,7 +7,7 @@ import AppForm from './AppForm'
 import '../styles/auth.css'
 
 export default function AuthGate({ children, path }: { children: (accountPanel: ReactNode, signedIn: boolean) => ReactNode; path: string }) {
-  const publicPage = path === '#/'
+  const publicPage = path === '#/' || path === '#/learn'
   const signingUp = path === '#/sign-up'
   const [client, setClient] = useState<SupabaseClient | null>(null)
   const [session, setSession] = useState<Session | null>(null)

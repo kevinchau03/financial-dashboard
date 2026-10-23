@@ -7,6 +7,7 @@ import PaychequePlanner from './pages/PaychequePlanner'
 import BudgetWrapped from './pages/BudgetWrapped'
 import Accounts from './pages/Accounts'
 import Activity from './pages/Activity'
+import Learn from './pages/Learn'
 import Navigation from './components/Navigation'
 import UnsavedChanges from './components/UnsavedChanges'
 import usePage from './hooks/usePage'
@@ -31,7 +32,7 @@ function AuthenticatedApp({ accountPanel, signedIn }: { accountPanel: ReactNode;
     <Navigation path={path} collapsed={navigationCollapsed} onToggle={() => setNavigationCollapsed(value => !value)} accountPanel={accountPanel} />
     <UnsavedChanges />
     <main id="main-content" tabIndex={-1}>
-      {path === '#/' ? <Home signedIn={signedIn} /> : path === '#/dashboard' ? <Dashboard /> : path === '#/budget' ? <Budget /> : path === '#/budget/paycheques' ? <PaychequePlanner /> : path === '#/budget-wrapped' ? <BudgetWrapped /> : path === '#/accounts' ? <Accounts /> : path === '#/activity' ? <Activity /> : <div className="page-intro"><h1>Page not found</h1><a href="#/dashboard">Go to Dashboard</a></div>}
+      {path === '#/' ? <Home signedIn={signedIn} /> : path === '#/dashboard' ? <Dashboard /> : path === '#/budget' ? <Budget /> : path === '#/budget/paycheques' ? <PaychequePlanner /> : path === '#/budget-wrapped' ? <BudgetWrapped /> : path === '#/accounts' ? <Accounts /> : path === '#/activity' ? <Activity /> : path === '#/learn' ? <Learn /> : <div className="page-intro"><h1>Page not found</h1><a href="#/dashboard">Go to Dashboard</a></div>}
     </main>
       <footer>
         <p>MyBudgetPro is a free, open-source project. <a href="https://github.com/kevinchau03/financial-dashboard" target="_blank" rel="noopener noreferrer">Contribute on GitHub</a></p>
