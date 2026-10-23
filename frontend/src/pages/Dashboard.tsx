@@ -21,7 +21,7 @@ export default function Dashboard() {
   const completedGoals = (goals.data ?? []).filter(goal => Number(goal.current_amount) >= Number(goal.target_amount)).length
   const nextBill = reminders[0]
   return <div className="overview-page">
-    <div className="page-intro overview-intro"><div><h1>Your finances</h1></div><a className="button-link" href="#/budget/paycheques">Plan a paycheque</a></div>
+    <div className="page-intro overview-intro"><div><h1>Your Dashboard</h1></div><a className="button-link" href="#/budget/paycheques">Plan a paycheque</a></div>
     <div className="overview-metrics">
       <StatCard tone="sky" title="Account balances" value={amount(sumAmounts((accounts.data ?? []).map(account => account.balance)))} description="Manually recorded" loading={accounts.loading} error={accounts.error} onRetry={accounts.retry} />
       <StatCard tone="leaf" title="Total saved" value={amount(sumAmounts((goals.data ?? []).map(goal => goal.current_amount)))} description="Saved toward goals" loading={goals.loading} error={goals.error} onRetry={goals.retry} />

@@ -13,7 +13,24 @@
 .auth-panel .form-errors { min-height: 4rem; margin: 0; padding: 0; border: 0; background: none; }
 .auth-panel .form-errors p { margin: .25rem 0; }
 .auth-help { margin-top: 1.5rem; font-size: .85rem; }
-.auth-session-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem 1rem; padding: .65rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--surface); font-size: .85rem; }
-.auth-session-bar span { overflow-wrap: anywhere; }
-.auth-session-bar button { min-height: 44px; }
-.auth-session-bar p { flex-basis: 100%; margin: 0; color: var(--danger); text-align: right; }
+.auth-guest-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.auth-guest-actions a { display: inline-flex; align-items: center; min-height: 44px; }
+.auth-panel form > button[type='submit'] { min-width: 9rem; }
+.navigation-content { display: contents; }
+.auth-account-panel { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--on-accent); font-size: .8rem; min-width: 0; }
+.auth-account-label { font-size: .7rem; }
+.auth-account-email { font-weight: 600; overflow-wrap: anywhere; }
+.auth-account-panel button { min-height: 44px; width: 100%; font-size: .8rem; }
+.auth-account-panel [role='alert'] { margin: 0; font-size: .8rem; overflow-wrap: anywhere; }
+.site-sidebar .navigation-content { display: flex; flex-direction: column; gap: 18px; flex: 1; min-height: 0; overflow: auto; padding-bottom: 4px; }
+.site-sidebar .auth-account-panel { flex-shrink: 0; margin-top: auto; max-height: 45%; overflow: auto; }
+.site-sidebar.is-collapsed .auth-account-panel { display: none; }
+.site-sidebar.is-collapsed .navigation-content { overflow: hidden; }
+.site-header:not(.site-sidebar) .auth-account-panel { max-width: 280px; }
+@media (max-width: 640px) {
+  .site-sidebar .navigation-content { flex: none; overflow: visible; gap: 10px; }
+  .site-sidebar .auth-account-panel, .site-sidebar.is-collapsed .auth-account-panel { display: grid; max-height: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; }
+  .site-sidebar .auth-account-label, .site-sidebar .auth-account-email { grid-column: 1; }
+  .site-sidebar .auth-account-panel button { grid-column: 2; grid-row: 1 / 3; }
+  .site-sidebar .auth-account-panel [role='alert'] { grid-column: 1 / -1; }
+}

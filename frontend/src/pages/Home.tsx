@@ -1,10 +1,10 @@
-export default function Home() {
+export default function Home({ signedIn }: { signedIn: boolean }) {
   return <div className="home-page">
     <div className="home-hero">
       <p className="brand">A little clarity. A little progress.</p>
       <h1>Make room for the life you’re saving for.</h1>
       <p>MyBudgetPro brings your savings goals, debts, bills, and account balances into a calmer place. Start small and build a plan that makes sense to you.</p>
-      <div className="actions"><a className="button-link" href="#/dashboard">Open your dashboard</a><a className="text-link" href="#/budget">Start planning →</a></div>
+      <div className="actions"><a className="button-link" href={signedIn ? '#/dashboard' : '#/sign-up'}>{signedIn ? 'Open your dashboard' : 'Sign up'}</a><a className="text-link" href={signedIn ? '#/budget' : '#/sign-in'}>{signedIn ? 'Start planning →' : 'Already have an account? Sign in →'}</a></div>
     </div>
     <div className="feature-grid">
       <section><p className="brand">01 · PLAN</p><h2>Give your money a purpose</h2><p>Save for a trip, work toward a new car, pay down debt, and keep upcoming bills close by.</p><a href="#/budget">Go to Budget →</a></section>

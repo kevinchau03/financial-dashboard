@@ -94,7 +94,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
               {goal.account_name && <p>Kept in <strong>{goal.account_name}</strong> · earmarked from its balance</p>}
               <GoalPlan goal={goal} />
               {goal.description && <p className="description">{goal.description}</p>}
-              <p>{Math.round(Number(goal.current_amount) / Number(goal.target_amount) * 100)}% saved{Number(goal.current_amount) >= Number(goal.target_amount) ? ' · Goal reached!' : ` · ${amount(String(Number(goal.target_amount) - Number(goal.current_amount)))} to go`}</p>
+              <p><strong className="progress-percentage">{Math.round(Number(goal.current_amount) / Number(goal.target_amount) * 100)}% saved</strong>{Number(goal.current_amount) >= Number(goal.target_amount) ? ' · Goal reached!' : ` · ${amount(String(Number(goal.target_amount) - Number(goal.current_amount)))} to go`}</p>
               {editing === goal.id ? <EditForm item={goal} kind="goals" onCancel={() => setEditing(null)} onSave={updated => {
                 setGoals(previous => previous.map(item => item.id === updated.id ? updated as Goal : item))
                 setEditing(null)

@@ -33,7 +33,7 @@ export default function Accounts() {
     return () => controller.abort()
   }, [attempt])
   return <div className="accounts-page">
-    <div className="page-intro list-heading"><div><h1>Your accounts</h1><p>Click a balance to update it. Press Enter to save.</p></div><button type="button" disabled={loading || !!error} onClick={() => setEditing('new')}>Add account</button></div>
+    <div className="page-intro list-heading"><div><h1>Your Accounts</h1><p>Click a balance to update it. Press Enter to save.</p></div><button type="button" disabled={loading || !!error} onClick={() => setEditing('new')}>Add account</button></div>
     <p className="wrapped-intro">Manually tracked balances. Linked goals are allocated portions of these balances. Unassigned money is available for another goal. Changes here do not move money.</p>
     <Notice message={notice} />
     {loading && <p role="status">Loading accounts…</p>}

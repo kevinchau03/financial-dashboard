@@ -84,7 +84,7 @@ function DebtCard({ debt, onSave, onDelete }: { debt: DebtType; onSave: (debt: D
     cardAction={paidOff ? <DeleteItem kind="debts" id={debt.id} name={debt.name} disabled={saving || editing} resolve onDelete={onDelete} /> : undefined}
     summary={<><strong>{amount(debt.remaining_amount)}</strong> remaining of {amount(debt.amount)}</>}
     progress={Number(debt.current_amount)} target={Number(debt.amount)} progressLabel={`${debt.name} repayment progress`}>
-    <p>{amount(debt.current_amount)} paid · {Math.round(Number(debt.current_amount) / Number(debt.amount) * 100)}% repaid</p>
+    <p>{amount(debt.current_amount)} paid · <strong className="progress-percentage">{Math.round(Number(debt.current_amount) / Number(debt.amount) * 100)}% repaid</strong></p>
     {paidOff ? <p className="status paid">Paid off!</p> : debt.due_date && <p>Due <time dateTime={debt.due_date}>{debt.due_date}</time>{debt.due_date < today() && <span className="status overdue">Overdue</span>}</p>}
     {debt.interest_rate !== null && <p>Interest rate: {debt.interest_rate}% (reference only)</p>}
     {debt.description && <p className="description">{debt.description}</p>}

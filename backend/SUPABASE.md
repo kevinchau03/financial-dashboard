@@ -30,8 +30,13 @@ Environment variables set by the host take precedence over `.env.local`.
 
 Under **Authentication → Users → Add user**, create an email/password user and
 confirm the email for local testing. Disable public sign-ups in Auth settings if
-this is a private app. The application has no public sign-up screen. Password
-resets and additional users are managed by the app owner in Supabase for now.
+this is a private app. The application includes a public landing page and sign-up
+screen; enable email sign-ups to use registration. Set the frontend Site URL under
+Authentication → URL Configuration and allow the frontend callback URLs, including
+`http://localhost:5173/` for local development (or `http://127.0.0.1:5173/` when used).
+Keep email confirmation enabled. The SDK uses PKCE; a confirmation link opened in
+another tab may require signing in manually afterward because session storage is
+scoped to a tab. Password resets are managed by the app owner in Supabase for now.
 Do not share user passwords or database credentials in chat.
 
 ## 3. Apply the schema

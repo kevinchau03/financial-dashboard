@@ -130,7 +130,13 @@ stored. The same-account reauthentication panel hides and makes mounted content
 inert while retaining drafts in memory. An account change remounts all financial
 screens, and explicit sign-out clears them. Sign out uses the existing unsaved
 changes confirmation. Login failure preserves email and clears the password.
-There is no self-service sign-up or password recovery screen; users are created
-and password resets handled by the app owner in Supabase. Source: backend/SUPABASE.md.
+The landing page (including an empty URL) is public regardless of authentication
+configuration or session loading. Sign in and Sign up are public credential flows
+owned by AuthGate and AppForm. Registration uses Supabase signUp, a 12-character
+minimum, generic errors, duplicate-submit prevention and email-confirmation feedback.
+Immediate sessions open Dashboard; email confirmation can establish a session through
+the SDK PKCE callback, or users can return and sign in. Protected deep links remain
+intact during sign-in. Password resets remain handled by the app owner in Supabase.
+Source: current public-landing/sign-up request; backend/SUPABASE.md.
 
 AppForm accepts an optional feedback slot and reserved validation space for sign-in. Validation and server errors share one inline region so credential failures and invalid submissions do not move the submit button. Other forms retain their existing layout.

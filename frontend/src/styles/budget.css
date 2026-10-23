@@ -63,9 +63,9 @@
 .budget-page .item-balance strong { display: block; color: var(--budget-ink); font-size: 1.35rem; letter-spacing: -.025em; }
 .budget-page .item-content { padding: 0 16px 18px; font-size: .875rem; }
 .budget-page progress { height: 7px; border: 0; border-radius: 10px; overflow: hidden; }
-.budget-page progress::-webkit-progress-bar { background: var(--border); }
-.budget-page progress::-webkit-progress-value { background: var(--primary); border-radius: 10px; }
-.budget-page progress::-moz-progress-bar { background: var(--primary); }
+.budget-page progress::-webkit-progress-bar { background: var(--progress-track); }
+.budget-page progress::-webkit-progress-value { background: var(--progress-fill); border-radius: 10px; }
+.budget-page progress::-moz-progress-bar { background: var(--progress-fill); }
 .budget-page .goal-plan { background: var(--budget-wash); padding: 14px; }
 .budget-page .contribution-form { border-top: 1px solid var(--budget-line); padding-top: 18px; margin-bottom: 18px; }
 .budget-page .contribution-form fieldset { gap: 10px; }
@@ -144,3 +144,5 @@
   .budget-page details.collapsible-item::details-content,
   .budget-page .item-chevron, .budget-page .bill-disclosure { transition: none; }
 }
+
+.budget-page .progress-percentage { font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }

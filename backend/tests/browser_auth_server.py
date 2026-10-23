@@ -70,6 +70,19 @@ def run():
             def logout():
                 return Response(status_code=204)
 
+            @main.app.post('/auth/v1/signup')
+            async def signup(request: Request):
+                payload = await request.json()
+                if state['slow']:
+                    await asyncio.sleep(2)
+                if state['unavailable']:
+                    return Response(json.dumps({'msg': 'Fixture unavailable'}), status_code=503, media_type='application/json')
+                # Existing fixture credentials exercise immediate-session registration;
+                # other addresses exercise email confirmation, without creating a user.
+                if payload.get('email') in users:
+                    return await token(request)
+                return {**users['owner@example.test'], 'email': payload.get('email')}
+
             @main.app.get('/__fixture/{mode}')
             def control(mode: str):
                 if mode == 'expire': state['expired'] = True

@@ -1,5 +1,14 @@
 # MyBudgetPro backend
 
+FastAPI API with Supabase Auth, PostgreSQL persistence, and per-user financial
+records. See the [project README](../README.md#vercel-deployment) for Vercel
+hosting, environment variables, production routing, and troubleshooting. Complete
+[Supabase setup](SUPABASE.md) before starting the API.
+
+PostgreSQL schema changes run through Alembic, not application startup. References
+to SQLite startup upgrades below describe local compatibility code only; legacy
+records require an explicitly assigned owner and are not imported into Supabase.
+
 ## Folder structure
 
 ```text
@@ -16,7 +25,10 @@ backend/
     conftest.py        # Shared isolated database/client fixture
     test_*.py         # Feature regression tests
   main.py             # Compatibility for the old main:app launch command
-  goals.db            # Existing local database; location is unchanged
+  migrations/         # PostgreSQL schema, ownership constraints and RLS
+  alembic.ini
+  SUPABASE.md          # Database and Auth setup
+  goals.db            # Optional legacy local database; never production storage
   pyproject.toml
   uv.lock
 ```
@@ -39,13 +51,14 @@ From `backend/`, install dependencies and start the API:
 
 ```powershell
 uv sync
+uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
 In another terminal, from `frontend/`:
 
 ```powershell
-npm install
+npm ci
 npm run dev
 ```
 
@@ -62,7 +75,7 @@ amount. Decimal values are returned as strings. Interactive API docs: `/docs`.
 Run backend checks from `backend/` with `uv run pytest`.
 Run frontend checks from `frontend/` with `npm run build` and `npm run lint`.
 
-## Saved TD statements and SQL practice
+## Saved TD statements and analytics
 
 V1 supports CSV uploads only. The API and file picker accept files up to
 4.5 MB (4,500,000 bytes). Vercel's request-body limit also includes multipart
@@ -102,20 +115,29 @@ Each file is validated before saving, and its records commit together. An
 identical file, even renamed, is saved only once per user. Different files with overlapping
 transactions are not deduplicated. Statements, downloads, transactions, and analytics belong to the authenticated user.
 
-`get_total_spent(session, statement_id)` in `app/services/analytics.py` runs this raw SQL and converts the
-result from cents to a Decimal dollar amount:
+`get_total_spent(session, statement_id)` in `app/services/analytics.py` sums
+integer cents in the database using SQLAlchemy ORM and converts the result to a
+Decimal dollar amount. Its query has the following shape:
 
-```sql
-SELECT COALESCE(SUM(debit_cents), 0)
-FROM transactions
-WHERE statement_id = :statement_id;
+```python
+from sqlalchemy import select, func
+from app.models import Transaction
+
+query = select(func.coalesce(func.sum(Transaction.debit_cents), 0)).where(
+    Transaction.statement_id == statement_id,
+)
+total_cents = session.scalar(query)
 ```
 
-A statement ID is required. It totals only that statement's debits, including
-transfers or fees listed as debits; credits are not subtracted. The upload endpoint passes
-the uploaded file's `statement_id` to all three analytics helpers, so the frontend
-shows only that statement's income, spending, and time range. Re-uploading an
-existing file selects its original statement without duplicating transactions.
+In API workflows, `session` comes from `get_session`, which creates a
+`UserSession` for the verified Supabase user. Ownership filters apply to reads,
+aggregations, updates, deletes, and relationship loads. Raw SQL is deliberately
+blocked in this session; PostgreSQL RLS provides an additional database boundary.
+Do not replace it with an unscoped administrative `Session` in API handlers.
+
+A statement ID is required. Debits include transfers or fees; credits are not
+subtracted. Analytics stay scoped to the selected statement and authenticated
+user. Re-uploading an identical file selects that user's original statement.
 No combined-statement UI is implemented.
 
 Your Budget Wrapped now includes a saved-file library. `GET /api/statements`
@@ -126,38 +148,14 @@ New uploads retain the original CSV bytes in `statement_imports.csv_contents`;
 column to older databases without removing records. Older statements still reopen
 from their transactions; re-uploading the same CSV restores its original file.
 
-To query one statement's four columns using raw SQL:
-
-```sql
-SELECT date,
-       description AS "transaction",
-       debit_cents / 100.0 AS debit,
-       credit_cents / 100.0 AS credit
-FROM transactions
-WHERE statement_id = :statement_id
-ORDER BY id;
-```
-
-The existing `transactions` table owns the records; the IDs and balance column
-are internal bookkeeping, so a second table with duplicate data is unnecessary.
-To call the helper from Python, run from the backend directory:
-
-```python
-from sqlalchemy.orm import Session
-from app.database import engine
-from app.services.analytics import get_total_spent
-
-with Session(engine) as session:
-    print(get_total_spent(session, statement_id=1))
-```
+The existing `transactions` table owns the records; IDs and the balance column
+are internal bookkeeping. Use the statement endpoints for authenticated reads,
+downloads, and insights. No second table with duplicate data is needed.
 
 ## Editing and payments
 
 - Goals are independent. Each has its own target, saved balance, optional date,
   and description. Contributions add savings directly to the selected goal.
-  On startup, legacy sub-goals become standalone goals; their balances are
-  deducted from their former parent's balance to preserve total savings.
-  The legacy nullable parent column is cleared and retained only in old databases.
   Allocation and release APIs are removed. Monthly planning estimates remain.
 
 - `DELETE /api/goals/{id}`, `DELETE /api/bills/{id}`, and `DELETE /api/debts/{id}`
@@ -201,7 +199,7 @@ with Session(engine) as session:
 - Responses include `remaining_amount` and payment history ordered by payment date
   (newest first). Debts are fully paid when remaining amount is zero.
 - Interest rate is informational (0–100%, two decimals); no automatic interest accrual
-  or lender integration is included. New tables are created on backend startup.
+  or lender integration is included. PostgreSQL tables are created by Alembic migrations.
 
 ## Paycheque plans
 
@@ -231,7 +229,7 @@ separate totals and statement imports are not consolidated across files.
   If a debt was repaid elsewhere, completion fails without changing the plan;
   cancel that pending allocation and allocate a smaller amount.
 - Startup adds the allocation tables and missing paycheque columns without clearing
-  existing data. These APIs use the prototype's shared database, like existing goals.
+  existing data. These APIs enforce ownership for the authenticated user, including allocations and retry keys.
 
 ## Paycheque accounts and deletion
 
@@ -253,8 +251,8 @@ remain available; their history now uses the shared payment response schema.
 `page`, `page_size`, and `pages`. Kind is optional (`bill`, `debt`, `goal`); page size
 is 1–100, default 20. Pages are clamped to the last available page, including page 1
 for empty results. Ordering is payment date descending, then ID descending, supported
-by chronology and kind/chronology indexes. This read-only endpoint follows the
-existing shared-workspace access model; it introduces no user/account isolation.
+by chronology and kind/chronology indexes. This read-only endpoint is scoped to the verified user, including filtered totals
+and pagination; other users' payment IDs cannot be read or undone.
 
 Goal additions now record a payment in the same transaction as their balance update.
 An account-backed direct contribution still earmarks existing funds; a completed
@@ -270,7 +268,8 @@ name, clearing its target link. Deleting a paycheque clears payment allocation l
 and preserves recorded activity and balances. History is not silently rewritten on
 rename. Undo is available through DELETE /api/payments/{id}; ledger records are retained internally after reversal. Opening balances are not payments.
 
-Startup runs versioned migration `20261020_unified_payments` before serving requests.
+For explicitly owned legacy SQLite upgrades, startup runs versioned migration
+`20261020_unified_payments` before serving requests. PostgreSQL uses Alembic instead.
 It copies all old bill/debt payments, backfills completed goal allocations still in
 the database, then retires `bill_payments` and `debt_payments`. The version is saved
 in `schema_migrations`. Copy, backfill, table retirement and version marking are one

@@ -12,7 +12,7 @@ export function getAuthClient() {
     if (!response.ok) throw new Error('Sign-in is not available. Check the server’s Supabase settings, then try again.')
     const config: { url: string; publishable_key: string } = await response.json()
     return createClient(config.url, config.publishable_key, {
-      auth: { persistSession: true, storage: window.sessionStorage, autoRefreshToken: true, detectSessionInUrl: false },
+      auth: { persistSession: true, storage: window.sessionStorage, autoRefreshToken: true, flowType: 'pkce', detectSessionInUrl: true },
       global: { fetch: (input, init) => fetch(input, { ...init, signal: init?.signal
         ? AbortSignal.any([init.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) }) },
     })

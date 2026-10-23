@@ -73,7 +73,7 @@ Noto Sans carries headings, controls, body text and financial values across the 
 
 The desktop sidebar uses a compact 190px width, 18px header spacing and 4px navigation gaps. A vertically centred edge control collapses it to a 24px rail, keeping the control visible so the navigation can always be reopened. Links retain 44px minimum height and readable text; mobile keeps the existing two-column navigation with tighter outer padding and does not collapse.
 
-Dashboard is a compact financial overview using the same sky, meadow and warm accent theme. Four separate totals show account balances, total goal savings, remaining debt and all recorded bill amounts. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Container breakpoints adapt the open lists and progress sections to the available width. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs enter Dashboard while the explicit landing route remains available through the brand.
+Dashboard is a compact financial overview using the same sky, meadow and warm accent theme. Four separate totals show account balances, total goal savings, remaining debt and all recorded bill amounts. Bounded previews keep accounts and progress prominent; bills and the latest statement support them. `styles/overview.css` consumes the budget tokens and scopes layout to `.overview-page`. It uses the shared StatCard and business-specific DashboardPanel, with links instead of editing forms. Container breakpoints adapt the open lists and progress sections to the available width. Budget now opens directly with the paycheque planning strip and management lists. Empty URLs open the public landing page; Dashboard retains its explicit protected route.
 
 Every page fills the available screen width, with responsive outer padding and no centred page max-width. Hero copy retains a readable line length. The existing full-width sidebar shell remains. Content container breakpoints at 1100, 820 and 580px account for the actual available width. Above 1100px, two primary columns sit beside a 290px bills panel. Below that, bills follow goals and debts; below 580px the primary columns and summary ledger stack. The page owns natural document scrolling. No page height or overflow lock is added. Modal content scrolls within its established viewport limit.
 
@@ -168,10 +168,18 @@ and focuses the ledger heading. No optimistic financial changes are shown.
 AuthGate uses the established cream background, Noto Sans, meadow buttons and
 shared AppForm validation. A quiet 30rem form owns email/password, a labelled
 show/hide control, inline errors, and a shared reserved feedback slot in AppForm. Supabase handles
-credentials; the app has invite-only access with no public sign-up screen.
+credentials. The landing page is public, including when authentication is loading or unavailable.
+Signed-out visitors see Sign in and Sign up in the header and a Sign up hero action.
+AuthGate owns sign-in and sign-up routes using the same AppForm and password visibility
+control; sign-up explains its 12-character minimum and shows email-confirmation feedback.
+Financial routes remain gated. An empty URL opens the public landing page.
 Session checking and unavailable configuration have explicit status and retry
 states. The signed-in bar shows the account email and a sign-out action. It wraps
 on narrow screens and participates in normal document flow. On API session expiry,
 financial content becomes hidden and inert; reauthentication with the same account
 retains mounted drafts. Changing accounts remounts financial content; signing out
 clears it. No financial drafts are written to browser storage.
+
+Authenticated identity/sign-out controls live in an account panel at the bottom of Navigation, supplied by AuthGate through App. The desktop sidebar menu scrolls independently above this panel; collapsed navigation hides it until reopened, while mobile keeps it beneath the links. AuthGate still owns session, sign-out, busy/error states and preserved expired-session content. No top session bar remains. auth.css owns panel layout.
+
+Progress bars alone use a stronger green #3F7D48 on a pale track #DCE5D9, via --progress-fill/--progress-track in index.css. Dashboard and Budget progress percentages use 1rem bold tabular text. The general accent palette remains unchanged.

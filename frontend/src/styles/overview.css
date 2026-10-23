@@ -26,9 +26,9 @@
 .overview-page .overview-progress-list li { padding: 14px 0; }
 .overview-page .overview-progress-list p { margin: 6px 0; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .overview-page .overview-progress-list progress { height: 6px; border: 0; border-radius: 10px; overflow: hidden; }
-.overview-page progress::-webkit-progress-bar { background: var(--border); }
-.overview-page progress::-webkit-progress-value { background: var(--card-accent); border-radius: 10px; }
-.overview-page progress::-moz-progress-bar { background: var(--card-accent); }
+.overview-page progress::-webkit-progress-bar { background: var(--progress-track); }
+.overview-page progress::-webkit-progress-value { background: var(--progress-fill); border-radius: 10px; }
+.overview-page progress::-moz-progress-bar { background: var(--progress-fill); }
 .overview-page .overview-empty { padding: 20px 0; }
 .overview-page .overview-empty h3 { margin: 0 0 8px; font-size: .95rem; }
 .overview-page .overview-empty p { color: var(--muted); font-size: .85rem; margin: 0 0 12px; }
@@ -90,3 +90,5 @@
   .overview-page .overview-metrics .stat-card:first-child .stat-value { font-size: 2rem; }
   .overview-page .overview-accounts .overview-list { grid-template-columns: 1fr; }
 }
+
+.overview-page .overview-progress-list progress + small { font-size: 1rem; font-weight: 700; color: var(--text); margin-top: 8px; font-variant-numeric: tabular-nums; }

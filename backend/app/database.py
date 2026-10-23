@@ -1,13 +1,12 @@
 from typing import Annotated
 from uuid import UUID
-import os
 import sqlite3
 from fastapi import Depends, HTTPException
 from sqlalchemy import create_engine, event, text, inspect
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import DeclarativeBase, Session, Mapped, mapped_column, with_loader_criteria
 from sqlalchemy.pool import NullPool
-from app.config import BACKEND_DIR
+from app.config import database_url
 from app.auth import AuthUser, get_current_user
 
 
@@ -38,7 +37,7 @@ def enable_sqlite_foreign_keys(connection, _):
         connection.execute('PRAGMA foreign_keys=ON')
 
 
-engine = build_engine(os.getenv('DATABASE_URL') or f"sqlite:///{(BACKEND_DIR / 'goals.db').as_posix()}")
+engine = build_engine(database_url())
 
 
 class UserSession(Session):

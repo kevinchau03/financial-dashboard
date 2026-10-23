@@ -14,6 +14,8 @@
   --accent-sun: #A8BE91;
   --accent-rose: #4F6D7A;
   --accent-terra: #A04F36;
+  --progress-fill: #3F7D48;
+  --progress-track: #DCE5D9;
   --primary: var(--accent-sun);
   --primary-hover: #9AB381;
   --on-accent: #293E48;

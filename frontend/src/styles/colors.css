@@ -5,10 +5,10 @@
 [data-tone='rose'] { --card-accent: var(--accent-rose); }
 .stat-card[data-tone] { border-top-color: var(--card-accent); }
 
-.overview-page .overview-panel[data-tone] progress { accent-color: var(--card-accent); }
+.overview-page .overview-panel[data-tone] progress { accent-color: var(--progress-fill); }
 .budget-page .dashboard-column[data-tone] > section { border-top: 3px solid var(--card-accent); }
-.budget-page .dashboard-column[data-tone] progress::-webkit-progress-value { background: var(--card-accent); }
-.budget-page .dashboard-column[data-tone] progress::-moz-progress-bar { background: var(--card-accent); }
+.budget-page .dashboard-column[data-tone] progress::-webkit-progress-value { background: var(--progress-fill); }
+.budget-page .dashboard-column[data-tone] progress::-moz-progress-bar { background: var(--progress-fill); }
 .budget-page .bills-sidebar > section { border-top: 3px solid var(--accent-sun); }
 .account-grid > section { border-top: 3px solid var(--accent-sky); }
 .feature-grid > section:nth-child(1) { border-top: 3px solid var(--accent-leaf); }
@@ -26,7 +26,7 @@ button.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--accent
 button:active:not(:disabled), .button-link:active { filter: brightness(.92); }
 .budget-eyebrow, .item-chevron { color: var(--muted); }
 .budget-page .paycheque-card.paycheque-planner { background: var(--surface); border-color: var(--border); }
-progress { accent-color: var(--card-accent, var(--primary)); }
+progress { accent-color: var(--progress-fill); }
 @media (forced-colors: active) {
   :root { color-scheme: light dark; }
   button, .button-link, .page-navigation a[aria-current='page'] { forced-color-adjust: auto; }

@@ -2,7 +2,7 @@ export function parseHash(hash: string) {
   const separator = hash.indexOf('?')
   const rawPath = separator < 0 ? hash : hash.slice(0, separator)
   const trimmedPath = rawPath.replace(/\/+$/, '')
-  const path = !trimmedPath ? '#/dashboard' : trimmedPath === '#' ? '#/' : trimmedPath
+  const path = !trimmedPath || trimmedPath === '#' ? '#/' : trimmedPath
   const params = new URLSearchParams(separator < 0 ? '' : hash.slice(separator + 1))
   return { path, params }
 }

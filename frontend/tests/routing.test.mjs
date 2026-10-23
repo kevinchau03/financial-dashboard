@@ -12,7 +12,7 @@ test('statement links retain the Wrapped page route and parse their ID separatel
 })
 
 test('base routes, empty URLs and unknown routes remain distinct', () => {
-  assert.equal(parseHash('').path, '#/dashboard')
+  assert.equal(parseHash('').path, '#/')
   assert.equal(parseHash('#/dashboard').path, '#/dashboard')
   assert.equal(parseHash('#/').path, '#/')
   assert.equal(parseHash('#/budget?anything=1').path, '#/budget')

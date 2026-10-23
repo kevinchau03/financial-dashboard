@@ -6,7 +6,9 @@ import { AuthenticationVisibility } from '../authVisibility'
 import AppForm from './AppForm'
 import '../styles/auth.css'
 
-export default function AuthGate({ children }: { children: ReactNode }) {
+export default function AuthGate({ children, path }: { children: (accountPanel: ReactNode, signedIn: boolean) => ReactNode; path: string }) {
+  const publicPage = path === '#/'
+  const signingUp = path === '#/sign-up'
   const [client, setClient] = useState<SupabaseClient | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -18,6 +20,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
   const heading = useRef<HTMLHeadingElement>(null)
   const pending = useRef(false)
   useEffect(() => {
@@ -52,20 +55,47 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   }, [attempt])
   const signedIn = Boolean(session) && !expired
   useEffect(() => {
-    if (!signedIn && !loading) {
-      document.title = 'Sign in | MyBudgetPro'
+    if (!signedIn && !publicPage) {
+      document.title = `${signingUp ? 'Sign up' : 'Sign in'} | MyBudgetPro`
       heading.current?.focus()
     }
-  }, [signedIn, loading])
+    if (signedIn && (path === '#/sign-in' || path === '#/sign-up')) window.location.hash = '#/dashboard'
+  }, [signedIn, loading, publicPage, signingUp, path])
+
+  function changeMode() {
+    setPassword('')
+    setShowPassword(false)
+    setError('')
+    setMessage('')
+  }
 
   async function signIn() {
     if (!client || pending.current) return
     pending.current = true
     setBusy(true)
     setError('')
+    setMessage('')
     try {
-      const result = await client.auth.signInWithPassword({ email: email.trim(), password })
+      const result = signingUp
+        ? await client.auth.signUp({ email: email.trim(), password, options: {
+          emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
+        } })
+        : await client.auth.signInWithPassword({ email: email.trim(), password })
+      if (signingUp && !result.error && !result.data.session) {
+        setMessage('Check your email for a confirmation link. After confirming, return here to sign in. If you already have an account, sign in instead.')
+        return
+      }
       if (result.error || !result.data.session) {
+        if (signingUp) {
+          setError(result.error?.code === 'signup_disabled'
+            ? 'Sign-up is currently unavailable. Contact the app owner for access.'
+            : result.error?.code === 'weak_password'
+              ? 'Choose a stronger password and try again.'
+              : result.error?.status === 429
+                ? 'Too many attempts. Please wait a few minutes before trying again.'
+                : 'Unable to sign up. Try again, or sign in if you already have an account.')
+          return
+        }
         setError(result.error?.status === 400 || result.error?.status === 422
           ? 'Unable to sign in. Check your email and password, then try again.'
           : 'Unable to sign in. Check your connection and try again.')
@@ -74,7 +104,7 @@ export default function AuthGate({ children }: { children: ReactNode }) {
       setSession(result.data.session)
       setOwner(result.data.session.user.id)
       setExpired(false)
-    } catch { setError('Unable to sign in. Check your connection and try again.') }
+    } catch { setError(`Unable to ${signingUp ? 'sign up' : 'sign in'}. Check your connection and try again.`) }
     finally { setPassword(''); setBusy(false); pending.current = false }
   }
 
@@ -94,36 +124,45 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     finally { setBusy(false); pending.current = false }
   }
 
+  const accountPanel = <div className="auth-account-panel" aria-label="Your account" role="region">
+    <span className="auth-account-label">Signed in as</span><strong className="auth-account-email">{session?.user.email ?? email}</strong>
+    <button type="button" className="secondary" data-navigation="sign-out" disabled={busy} onClick={() => void signOut()}>{busy ? 'Signing out…' : 'Sign out'}</button>
+    {error && signedIn && <p role="alert">{error}</p>}
+  </div>
+
+  // Public content must render even while session/configuration requests are unavailable.
+  if (publicPage) return children(signedIn ? accountPanel : <nav className="auth-guest-actions" aria-label="Account">
+    <a href="#/sign-in" onClick={changeMode}>Sign in</a>
+    <a className="button-link" href="#/sign-up" onClick={changeMode}>Sign up</a>
+  </nav>, signedIn)
+
   return <>
     {owner && <div key={owner} hidden={!signedIn} inert={!signedIn}>
-      <div className="auth-session-bar">
-        <span>Signed in as <strong>{session?.user.email ?? email}</strong></span>
-        <button type="button" className="secondary" data-navigation="sign-out" disabled={busy} onClick={() => void signOut()}>{busy ? 'Signing out…' : 'Sign out'}</button>
-        {error && signedIn && <p role="alert">{error}</p>}
-      </div>
-      <AuthenticationVisibility value={signedIn}>{children}</AuthenticationVisibility>
+      <AuthenticationVisibility value={signedIn}>{children(accountPanel, signedIn)}</AuthenticationVisibility>
     </div>}
     {!signedIn && <main className="auth-page" aria-busy={loading || busy}>
       <section className="auth-panel" aria-labelledby="sign-in-title">
-        <p className="brand">MyBudgetPro</p>
-        <h1 id="sign-in-title" ref={heading} tabIndex={-1}>Sign in to your budget.</h1>
-        <p>Sign in to manage your accounts, goals and payments.</p>
+        <a className="brand" href="#/" onClick={changeMode}>MyBudgetPro · Home</a>
+        <h1 id="sign-in-title" ref={heading} tabIndex={-1}>{signingUp ? 'Create your account.' : 'Sign in to your budget.'}</h1>
+        <p>{signingUp ? 'Start keeping track of your accounts, goals and payments.' : 'Sign in to manage your accounts, goals and payments.'}</p>
         {loading ? <p role="status">Checking your session…</p> : !client ? <>
           <p role="alert">{error}</p>
           <button type="button" onClick={() => { setLoading(true); setError(''); setAttempt(value => value + 1) }}>Try again</button>
         </> : <>
-          {expired && <p role="status">Your session has ended. Sign in with the same account to continue where you left off.</p>}
-          <AppForm onSubmit={signIn} reserveValidationSpace onInput={() => setError('')} feedback={error && <p role="alert">{error}</p>}>
+          {expired && !signingUp && <p role="status">Your session has ended. Sign in with the same account to continue where you left off.</p>}
+          <AppForm key={signingUp ? 'sign-up' : 'sign-in'} onSubmit={signIn} reserveValidationSpace onInput={() => setError('')} feedback={<>{error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}</>}>
             <label htmlFor="sign-in-email">Email</label>
             <input id="sign-in-email" name="email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} disabled={busy} />
             <label htmlFor="sign-in-password">Password</label>
             <div className="auth-password">
-              <input id="sign-in-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />
+              <input id="sign-in-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={signingUp ? 'new-password' : 'current-password'} minLength={signingUp ? 12 : undefined} aria-describedby={signingUp ? 'password-guidance' : undefined} required value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />
               <button type="button" className="secondary" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Hide' : 'Show'}</button>
             </div>
-            <button type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+            {signingUp && <p id="password-guidance" className="auth-help">Use at least 12 characters. A unique passphrase works well.</p>}
+            <button type="submit" disabled={busy}>{busy ? (signingUp ? 'Signing up…' : 'Signing in…') : (signingUp ? 'Sign up' : 'Sign in')}</button>
           </AppForm>
-          <p className="auth-help">Use the account created for you. Contact the app owner if you need access or a password reset.</p>
+          <p className="auth-help">{signingUp ? 'Already have an account? ' : 'New to MyBudgetPro? '}<a href={signingUp ? '#/sign-in' : '#/sign-up'} onClick={changeMode}>{signingUp ? 'Sign in' : 'Sign up'}</a></p>
+          {!signingUp && <p className="auth-help">Contact the app owner if you need a password reset.</p>}
         </>}
       </section>
     </main>}
