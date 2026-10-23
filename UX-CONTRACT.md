@@ -1,5 +1,7 @@
 # UI contract
 
+At widths up to 640px, Navigation uses a collapsed disclosure for page links and account actions on both public and authenticated screens. The hamburger button exposes its expanded state and controlled regions; Escape closes it and restores focus. Selecting a page or crossing the desktop breakpoint closes it. Hidden links are removed from keyboard navigation. Desktop sidebar collapse remains independent.
+
 Learn (`#/learn`) is public, like the landing page, and renders while authentication is loading or unavailable. Landing links directly to Learn. Its setup and feature links retain protected destinations: signed-out visitors must authenticate before accessing financial tools. Source: user request to make Learn accessible before sign-in.
 
 ## Canonical UI Map

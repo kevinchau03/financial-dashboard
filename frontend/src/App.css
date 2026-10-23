@@ -176,3 +176,19 @@ footer { padding: 24px clamp(16px, 2.5vw, 48px); border-top: 1px solid var(--bor
 @media (prefers-reduced-motion: reduce) {
   .with-sidebar, .site-sidebar, .sidebar-toggle svg { transition: none; }
 }
+
+.mobile-navigation-toggle { display: none; }
+.navigation-account { display: contents; }
+@media (max-width: 640px) {
+  .site-header .navigation-content { display: grid; grid-template-columns: minmax(0, 1fr) 44px; align-items: center; gap: 12px; width: 100%; }
+  .site-header .site-brand { min-width: 0; overflow-wrap: anywhere; }
+  .site-header .mobile-navigation-toggle { display: grid; place-items: center; justify-self: end; width: 44px; height: 44px; padding: 8px; border: 1px solid currentColor; border-radius: 7px; background: transparent; color: var(--text); }
+  .site-header .mobile-navigation-toggle:hover { background: color-mix(in srgb, var(--text), transparent 88%); }
+  .mobile-navigation-toggle svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .site-header .page-navigation, .site-header .navigation-account { display: none; }
+  .site-header.mobile-navigation-open .page-navigation { display: grid; grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); gap: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .site-header.mobile-navigation-open .navigation-account { display: block; width: 100%; }
+  .site-header .page-navigation a { display: flex; align-items: center; min-height: 44px; }
+  .site-header .page-navigation a:hover { text-decoration: underline; }
+  .site-header .mobile-navigation-toggle:focus-visible { outline-color: currentColor; }
+}
