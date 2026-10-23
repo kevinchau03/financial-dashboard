@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { ComponentProps, SubmitEvent } from 'react'
+import type { ComponentProps, ReactNode, SubmitEvent } from 'react'
 import { formSnapshot, unsavedForms } from '../unsavedForms'
 
 // Own constraint feedback while retaining native input types and keyboards.
-export default function AppForm({ onSubmit, children, ...props }: ComponentProps<'form'>) {
+export default function AppForm({ onSubmit, children, reserveValidationSpace = false, feedback, ...props }: ComponentProps<'form'> & { reserveValidationSpace?: boolean; feedback?: ReactNode }) {
   const id = useId()
   const pending = useRef(false)
   const formRef = useRef<HTMLFormElement>(null)
@@ -50,7 +50,10 @@ export default function AppForm({ onSubmit, children, ...props }: ComponentProps
     }
   }}>
     {children}
-    {errors.length > 0 && <div className="form-errors" role="alert">{errors.map(error => <p id={error.name} key={error.name}>{error.message}</p>)}</div>}
+    {(errors.length > 0 || reserveValidationSpace || feedback) && <div className="form-errors" role={errors.length ? 'alert' : undefined}>
+      {errors.map(error => <p id={error.name} key={error.name}>{error.message}</p>)}
+      {errors.length === 0 && feedback}
+    </div>}
   </form>
 }
 

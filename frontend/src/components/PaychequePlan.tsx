@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useRef, useState } from 'react'
 import { amount, saveRecord, today } from '../api'
 import type { Goal, Debt, Bill } from '../types'
@@ -26,7 +27,7 @@ export default function PaychequePlan({ existing, previous, initialAmount, onSav
     const controller = new AbortController()
     async function load() {
       try {
-        const responses = await Promise.all(['/api/goals', '/api/debts', '/api/accounts', '/api/bills'].map(url => fetch(url, { signal: controller.signal })))
+        const responses = await Promise.all(['/api/goals', '/api/debts', '/api/accounts', '/api/bills'].map(url => apiFetch(url, { signal: controller.signal })))
         if (responses.some(response => !response.ok)) throw new Error('Unable to load goals, debts and accounts. Please retry.')
         const [goals, debts, accounts, loadedBills] = await Promise.all(responses.map(response => response.json())) as [Goal[], Debt[], Account[], Bill[]]
         if (!controller.signal.aborted) { setBills(loadedBills); setTargets([

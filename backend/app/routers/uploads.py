@@ -7,15 +7,16 @@ from app.services.csv_import import read_csv, clean_data, load_csv
 from app.services.analytics import get_total_income, get_total_spent, get_time_range
 
 router = APIRouter(tags=['uploads'])
+MAX_CSV_BYTES = 4_500_000
 
 @router.post("/api/upload_csv")
 async def upload_csv(file: UploadFile, session: Annotated[Session, Depends(get_session)], format: Annotated[Literal['csv', 'td'], Form()] = 'csv'):
     try:
         if not file.filename or not file.filename.lower().endswith('.csv'):
             raise HTTPException(400, 'Please upload a CSV file.')
-        contents = await file.read(5 * 1024 * 1024 + 1)
-        if len(contents) > 5 * 1024 * 1024:
-            raise HTTPException(413, 'CSV files must be no larger than 5 MB.')
+        contents = await file.read(MAX_CSV_BYTES + 1)
+        if len(contents) > MAX_CSV_BYTES:
+            raise HTTPException(413, 'CSV files must be no larger than 4.5 MB.')
         try:
             extracted = read_csv(contents, format=format)
             cleaned = clean_data(extracted)

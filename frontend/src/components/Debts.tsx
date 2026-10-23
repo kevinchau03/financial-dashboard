@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import AutoTextarea from './AutoTextarea'
 import EmptyState from './EmptyState'
 import AppForm from './AppForm'
@@ -119,7 +120,7 @@ export default function Debts({ onChange = () => undefined, revision = 0 }: { on
     async function load() {
       setError('')
       try {
-        const response = await fetch('/api/debts', { signal: controller.signal })
+        const response = await apiFetch('/api/debts', { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load debts. Check the backend and refresh the page.')
         const saved: DebtType[] = await response.json()
         if (!controller.signal.aborted) setDebts(saved)

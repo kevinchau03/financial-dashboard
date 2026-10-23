@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 import type { PaychequeRecord } from '../paychequeTypes'
 import { amount } from '../api'
@@ -13,7 +14,7 @@ export default function PaychequeHistory({ onSelect, onClose }: { onSelect: (pay
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch(`/api/paycheques?offset=${offset}&limit=21`, { signal: controller.signal })
+        const response = await apiFetch(`/api/paycheques?offset=${offset}&limit=21`, { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load paycheques.')
         const data: PaychequeRecord[] = await response.json()
         if (!controller.signal.aborted) setItems(data)

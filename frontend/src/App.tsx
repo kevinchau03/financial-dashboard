@@ -9,10 +9,15 @@ import Activity from './pages/Activity'
 import Navigation from './components/Navigation'
 import UnsavedChanges from './components/UnsavedChanges'
 import usePage from './hooks/usePage'
+import AuthGate from './components/AuthGate'
 import './App.css'
 import './styles/colors.css'
 
 export default function App() {
+  return <AuthGate><AuthenticatedApp /></AuthGate>
+}
+
+function AuthenticatedApp() {
   const path = usePage()
   const [navigationCollapsed, setNavigationCollapsed] = useState(false)
   const hasSidebar = path !== '#/'

@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import AutoTextarea from './AutoTextarea'
 import EmptyState from './EmptyState'
 import AppForm from './AppForm'
@@ -30,7 +31,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
     async function loadGoals() {
       setLoadError('')
       try {
-        const response = await fetch('/api/goals', { signal: controller.signal })
+        const response = await apiFetch('/api/goals', { signal: controller.signal })
         if (!response.ok) throw new Error('Failed to load goals')
         const savedGoals: Goal[] = await response.json()
         if (!controller.signal.aborted) setGoals(savedGoals)
@@ -52,7 +53,7 @@ export default function Goals({ onSavingsChange = () => undefined, revision = 0 
     setSaveError('')
     setNotice('')
     try {
-      const response = await fetch('/api/goals', {
+      const response = await apiFetch('/api/goals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

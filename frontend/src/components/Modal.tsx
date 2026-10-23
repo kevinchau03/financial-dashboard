@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { unsavedForms } from '../unsavedForms'
+import { AuthenticationVisibility } from '../authVisibility'
 
 export default function Modal({ title, busy = false, onClose, children }: {
   title: string; busy?: boolean; onClose: () => void; children: ReactNode
@@ -8,6 +9,7 @@ export default function Modal({ title, busy = false, onClose, children }: {
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   const [confirmClose, setConfirmClose] = useState(false)
+  const visible = useContext(AuthenticationVisibility)
   function requestClose() {
     if (busy) return
     const dirty = [...(dialog.current?.querySelectorAll('form') ?? [])].some(form => unsavedForms.get(form)?.().dirty)
@@ -18,6 +20,7 @@ export default function Modal({ title, busy = false, onClose, children }: {
     if (confirmClose) dialog.current?.querySelector<HTMLButtonElement>('[data-keep-editing]')?.focus()
   }, [confirmClose])
   useEffect(() => {
+    if (!visible) return
     const element = dialog.current!
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const overflow = document.body.style.overflow
@@ -29,7 +32,7 @@ export default function Modal({ title, busy = false, onClose, children }: {
       document.body.style.overflow = overflow
       trigger?.focus()
     }
-  }, [])
+  }, [visible])
   return <dialog ref={dialog} className="modal" aria-labelledby={titleId} onCancel={event => {
     event.preventDefault()
     if (confirmClose) setConfirmClose(false)

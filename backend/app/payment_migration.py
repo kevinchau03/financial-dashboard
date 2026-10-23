@@ -4,13 +4,14 @@ Copy, backfill, and retire legacy tables in one transaction, without changing ba
 Run before serving requests; migration errors abort startup rather than losing history.
 """
 from decimal import Decimal
+from uuid import UUID
 from sqlalchemy import MetaData, Table, inspect, select, text
 from app.models import Payment, PaychequeAllocation, FinancialGoal
 
 VERSION = '20261020_unified_payments'
 
 
-def migrate_payments(engine):
+def migrate_payments(engine, *, legacy_owner=None):
     with engine.begin() as connection:
         # Explicitly begin SQLite DDL transaction (pysqlite otherwise defers BEGIN).
         if engine.dialect.name == 'sqlite':
@@ -30,7 +31,7 @@ def migrate_payments(engine):
                 old.outerjoin(target, old.c[column] == target.c.id))).mappings()
             for row in rows:
                 connection.execute(Payment.__table__.insert().values(
-                    kind=kind, target_name=row['target_name'] or f'Deleted {kind}',
+                    user_id=UUID(str(row.get('user_id') or legacy_owner)), kind=kind, target_name=row['target_name'] or f'Deleted {kind}',
                     **{column: row[column] if row['target_name'] is not None else None},
                     amount=row['amount'], paid_on=row['paid_on'], due_date=row['due_date'], source='legacy'))
         # Completed debt allocations already have debt payment rows. Only goals
@@ -44,7 +45,7 @@ def migrate_payments(engine):
             if row['completed_on'] is None:
                 raise ValueError('Completed goal allocation has no completion date; repair it before migration.')
             connection.execute(Payment.__table__.insert().values(
-                kind='goal', target_name=row['name'], goal_id=row['existing_goal_id'],
+                user_id=UUID(str(row.get('user_id') or legacy_owner)), kind='goal', target_name=row['name'], goal_id=row['existing_goal_id'],
                 amount=Decimal(row['amount_cents']) / 100, paid_on=row['completed_on'],
                 due_date=None, source='paycheque', allocation_id=row['id']))
         for table_name in ('bill_payments', 'debt_payments'):

@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 import { amount } from '../api'
 import type { PaychequeRecord } from '../paychequeTypes'
@@ -17,7 +18,7 @@ export default function PaychequePlanner() {
   const [retry, setRetry] = useState(0)
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/paycheques/latest', { signal: controller.signal }).then(async response => {
+    apiFetch('/api/paycheques/latest', { signal: controller.signal }).then(async response => {
       if (!response.ok) throw new Error('Unable to load your latest paycheque.')
       const pay: PaychequeRecord | null = await response.json()
       if (!controller.signal.aborted) { setSaved(pay); setMode(pay ? 'view' : 'new') }

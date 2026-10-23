@@ -26,7 +26,7 @@ in the routers; multi-step financial operations live in services and retain
 their existing transaction boundaries. Services share models and schemas
 without importing routers. CSV parsing and loading are in
 `app/services/csv_import.py`, statement persistence in
-`app/services/statements.py`, and raw SQL analytics in
+`app/services/statements.py`, and owner-scoped ORM analytics in
 `app/services/analytics.py`. Shared payment response fields are defined in
 `app/schemas/bills.py` and reused by debt schemas.
 
@@ -50,8 +50,7 @@ npm run dev
 ```
 
 Open the URL printed by Vite. Vite forwards `/api` to the backend on port 8000.
-Goals are stored in `backend/goals.db`, created automatically on startup.
-The current prototype uses a shared goal list without user accounts.
+Financial data is stored in the database configured by `DATABASE_URL`. Every financial endpoint requires a Supabase access token; users see only their own records. See [Supabase setup](SUPABASE.md) before starting the app.
 
 - `POST /api/goals`: create a goal with `name`, `target_amount`, `current_amount`
   (defaults to zero), optional `due_date` (`YYYY-MM-DD`), and optional `description`.
@@ -65,7 +64,11 @@ Run frontend checks from `frontend/` with `npm run build` and `npm run lint`.
 
 ## Saved TD statements and SQL practice
 
-Restart the backend to create the new tables in `backend/goals.db`. Uploading
+V1 supports CSV uploads only. The API and file picker accept files up to
+4.5 MB (4,500,000 bytes). Vercel's request-body limit also includes multipart
+overhead, so a file at that exact limit may be rejected before reaching the API.
+
+Run the database migration described in [Supabase setup](SUPABASE.md) first. Uploading
 through Your Budget Wrapped saves TD transactions and displays the parsed rows.
 The import pipeline separates extraction, cleaning and loading:
 
@@ -96,8 +99,8 @@ Earlier uploads must be uploaded again to save them. Generic CSV previews
   are NULL. Amounts are integer cents (239 means $2.39).
 
 Each file is validated before saving, and its records commit together. An
-identical file, even renamed, is saved only once. Different files with overlapping
-transactions are not deduplicated. All records are shared; there are no user accounts.
+identical file, even renamed, is saved only once per user. Different files with overlapping
+transactions are not deduplicated. Statements, downloads, transactions, and analytics belong to the authenticated user.
 
 `get_total_spent(session, statement_id)` in `app/services/analytics.py` runs this raw SQL and converts the
 result from cents to a Decimal dollar amount:

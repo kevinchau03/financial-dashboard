@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useRef, useState } from 'react'
 import Modal from './Modal'
 
@@ -19,7 +20,7 @@ export default function DeleteItem({ kind, id, name, disabled, onDelete, resolve
     setBusy(true)
     setError('')
     try {
-      const response = await fetch(`/api/${kind}/${id}${resolving ? '?resolve=true' : ''}`, { method: 'DELETE' })
+      const response = await apiFetch(`/api/${kind}/${id}${resolving ? '?resolve=true' : ''}`, { method: 'DELETE' })
       // Already removed records can safely be removed from the local list too.
       if (!response.ok && response.status !== 404) {
         const body = await response.json().catch(() => null)

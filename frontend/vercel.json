@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://financial-dashboard-9qdi.vercel.app/api/:path*"
+    }
+  ]
+}

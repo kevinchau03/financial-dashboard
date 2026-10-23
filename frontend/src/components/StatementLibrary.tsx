@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 import type { SavedStatement } from '../statementTypes'
 import { statementDate } from '../statementTypes'
@@ -16,7 +17,7 @@ export default function StatementLibrary({ busy }: { busy: boolean }) {
       setLoading(true)
       setError('')
       try {
-        const response = await fetch(`/api/statements?offset=${page * pageSize}&limit=${pageSize}`, { signal: controller.signal })
+        const response = await apiFetch(`/api/statements?offset=${page * pageSize}&limit=${pageSize}`, { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load saved statements. Please try again.')
         const data: { items: SavedStatement[]; total: number } = await response.json()
         if (!controller.signal.aborted) { setStatements(data.items); setTotal(data.total) }

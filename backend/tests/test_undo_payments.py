@@ -1,3 +1,4 @@
+from conftest import TEST_USER_ID
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
@@ -187,13 +188,13 @@ def test_history_clamps_after_undo_last_row_on_last_page(client):
 def test_additive_upgrade_preserves_old_payment_rows_without_inventing_snapshots(tmp_path):
     engine = create_engine(f"sqlite:///{(tmp_path / 'old.db').as_posix()}")
     try:
-        initialize_database(engine)
+        initialize_database(engine, legacy_owner=TEST_USER_ID)
         with engine.begin() as connection:
             connection.execute(text('DROP TABLE payments'))
             connection.execute(text('CREATE TABLE payments (id INTEGER PRIMARY KEY, kind VARCHAR(8), target_name VARCHAR(120), bill_id INTEGER, debt_id INTEGER, goal_id INTEGER, amount NUMERIC(14,2), paid_on DATE, due_date DATE, source VARCHAR(12), allocation_id INTEGER, recorded_at DATETIME)'))
             connection.execute(text("INSERT INTO payments (id,kind,target_name,amount,paid_on,source) VALUES (1,'debt','Loan',10,'2025-01-01','legacy')"))
-        initialize_database(engine)
-        initialize_database(engine)
+        initialize_database(engine, legacy_owner=TEST_USER_ID)
+        initialize_database(engine, legacy_owner=TEST_USER_ID)
         with engine.connect() as connection:
             assert connection.execute(text('SELECT target_name,amount,undo_state,undo_account_id,undone_at FROM payments')).one() == ('Loan', 10, None, None, None)
     finally:

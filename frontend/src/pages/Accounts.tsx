@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 import AccountForm from '../components/AccountForm'
 import AccountRow from '../components/AccountRow'
@@ -21,7 +22,7 @@ export default function Accounts() {
       setLoading(true)
       setError('')
       try {
-        const response = await fetch('/api/accounts', { signal: controller.signal })
+        const response = await apiFetch('/api/accounts', { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load accounts.')
         const data: Account[] = await response.json()
         if (!controller.signal.aborted) setAccounts(data)

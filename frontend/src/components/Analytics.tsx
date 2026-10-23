@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 import { amount } from '../api'
 import StatCard from './StatCard'
@@ -22,7 +23,7 @@ function MetricCard({ metric, revision }: { metric: Metric; revision: number }) 
       setLoading(true)
       setError('')
       try {
-        const response = await fetch(metric.endpoint, { signal: controller.signal })
+        const response = await apiFetch(metric.endpoint, { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load summary.')
         const data: Record<string, string> = await response.json()
         const total = data[metric.field]

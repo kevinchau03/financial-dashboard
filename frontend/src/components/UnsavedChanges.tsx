@@ -11,7 +11,7 @@ export default function UnsavedChanges() {
       if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || !(event.target instanceof Element)) return
       const link = event.target.closest<HTMLAnchorElement>('a[href]')
       const cancel = event.target.closest<HTMLButtonElement>('button')
-      const navigation = link && link.target !== '_blank' && link.hash !== '#main-content' && link.href !== window.location.href
+      const navigation = (link && link.target !== '_blank' && link.hash !== '#main-content' && link.href !== window.location.href) || cancel?.dataset.navigation === 'sign-out'
       const cancellation = cancel?.textContent?.trim() === 'Cancel'
       if (!navigation && !cancellation) return
       const relevant = [...unsavedForms].filter(([form]) => navigation || (cancel && form.contains(cancel)))

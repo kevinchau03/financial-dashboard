@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import CsvUpload from '../components/CsvUpload'
 import StatementLibrary from '../components/StatementLibrary'
 import StatementDetail from '../components/StatementDetail'
@@ -37,7 +38,7 @@ export default function BudgetWrapped() {
     data.append('file', file)
     data.append('format', 'td')
     try {
-      const response = await fetch('/api/upload_csv', { method: 'POST', body: data, signal: controller.signal })
+      const response = await apiFetch('/api/upload_csv', { method: 'POST', body: data, signal: controller.signal })
       if (!response.ok) {
         const body = await response.json().catch(() => null)
         throw new Error(typeof body?.detail === 'string' ? body.detail : 'Unable to upload the CSV. Please try again.')

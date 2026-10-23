@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useRef, useState } from 'react'
 import { amount } from '../api'
 import { statementDate } from '../statementTypes'
@@ -25,7 +26,7 @@ export default function StatementWrapped({ statementId, filename, transactions, 
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch(`/api/statements/${statementId}/insights`, { signal: controller.signal })
+        const response = await apiFetch(`/api/statements/${statementId}/insights`, { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load your Wrapped. Try again or view the statement summary.')
         const data: Insights = await response.json()
         if (!controller.signal.aborted) setInsights(data)

@@ -1,13 +1,13 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary, CheckConstraint, Index, JSON
+from sqlalchemy import Date, Numeric, String, Text, ForeignKey, LargeBinary, CheckConstraint, Index, JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.database import Base, Owned
 
 
-class Account(Base):
+class Account(Owned, Base):
     __tablename__ = "accounts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -31,7 +31,8 @@ class Account(Base):
 
 
 
-class Paycheque(Base):
+class Paycheque(Owned, Base):
+    __table_args__ = (UniqueConstraint('user_id', 'request_id', name='uq_paycheque_user_request'),)
     __tablename__ = "paycheques"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -41,7 +42,7 @@ class Paycheque(Base):
     spending_reserved: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0, server_default='0')
     next_payday: Mapped[date | None] = mapped_column(Date, nullable=True)
     allocated_cents: Mapped[int] = mapped_column(default=0, server_default='0')
-    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True, unique=True)
+    request_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     request_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     allocations: Mapped[list['PaychequeAllocation']] = relationship(lazy='selectin', order_by='PaychequeAllocation.id')
 
@@ -54,16 +55,17 @@ class Paycheque(Base):
         return self.amount - self.allocated_amount - self.bills_reserved - self.spending_reserved
 
 
-class PaychequeAllocationBatch(Base):
+class PaychequeAllocationBatch(Owned, Base):
+    __table_args__ = (UniqueConstraint('user_id', 'request_id', name='uq_batch_user_request'),)
     __tablename__ = 'paycheque_allocation_batches'
 
     id: Mapped[int] = mapped_column(primary_key=True)
     paycheque_id: Mapped[int] = mapped_column(ForeignKey('paycheques.id'), index=True)
-    request_id: Mapped[str] = mapped_column(String(36), unique=True)
+    request_id: Mapped[str] = mapped_column(String(36))
     fingerprint: Mapped[str] = mapped_column(String(64))
 
 
-class PaychequeAllocation(Base):
+class PaychequeAllocation(Owned, Base):
     __tablename__ = 'paycheque_allocations'
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -82,17 +84,18 @@ class PaychequeAllocation(Base):
         return (Decimal(self.amount_cents) / 100).quantize(Decimal('.01'))
 
 
-class StatementImport(Base):
+class StatementImport(Owned, Base):
+    __table_args__ = (UniqueConstraint('user_id', 'content_hash', name='uq_statement_user_hash'),)
     __tablename__ = "statement_imports"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     filename: Mapped[str] = mapped_column(Text)
-    content_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    content_hash: Mapped[str] = mapped_column(String(64))
     csv_contents: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     imported_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
 
 
-class Transaction(Base):
+class Transaction(Owned, Base):
     __tablename__ = "transactions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -104,7 +107,7 @@ class Transaction(Base):
     balance_cents: Mapped[int]
 
 
-class FinancialGoal(Base):
+class FinancialGoal(Owned, Base):
     __tablename__ = "financial_goals"
 
     account_id: Mapped[int | None] = mapped_column(ForeignKey('accounts.id'), nullable=True)
@@ -121,7 +124,7 @@ class FinancialGoal(Base):
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-class Bills(Base):
+class Bills(Owned, Base):
     __tablename__ = "bills"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -135,7 +138,7 @@ class Bills(Base):
     payments: Mapped[list['Payment']] = relationship(primaryjoin='and_(Bills.id == Payment.bill_id, Payment.undone_at.is_(None))', order_by='desc(Payment.paid_on), desc(Payment.id)', lazy='selectin')
 
 
-class Debts(Base):
+class Debts(Owned, Base):
     __tablename__ = "debts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -151,7 +154,7 @@ class Debts(Base):
     def remaining_amount(self) -> Decimal:
         return self.amount - self.current_amount
 
-class Payment(Base):
+class Payment(Owned, Base):
     """Completed records and undo tombstones; names survive rename/deletion.
 
     Nullable, real foreign keys retain referential integrity without deleting history.
@@ -164,8 +167,8 @@ class Payment(Base):
                         "(kind = 'debt' AND bill_id IS NULL AND goal_id IS NULL) OR "
                         "(kind = 'goal' AND bill_id IS NULL AND debt_id IS NULL)", name='payment_target_kind'),
         CheckConstraint("source IN ('manual', 'paycheque', 'legacy')", name='payment_source'),
-        Index('ix_payments_chronology', 'paid_on', 'id'),
-        Index('ix_payments_kind_chronology', 'kind', 'paid_on', 'id'),
+        Index('ix_payments_chronology', 'user_id', 'paid_on', 'id'),
+        Index('ix_payments_kind_chronology', 'user_id', 'kind', 'paid_on', 'id'),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

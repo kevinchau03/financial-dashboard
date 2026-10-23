@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 
 export default function useDashboardResource<T>(url: string, failureMessage = 'Unable to load this overview. Check your connection and retry.') {
@@ -7,7 +8,7 @@ export default function useDashboardResource<T>(url: string, failureMessage = 'U
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch(url, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) })
+        const response = await apiFetch(url, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) })
         if (!response.ok) throw new Error(failureMessage)
         const data: T = await response.json()
         if (!controller.signal.aborted) setResult({ url, attempt, data, error: '' })

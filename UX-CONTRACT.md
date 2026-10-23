@@ -14,13 +14,14 @@
 | Unsaved changes | UnsavedChanges and form snapshots | frontend/src/unsavedForms.ts | Link navigation, inline Cancel, browser unload | Browser pending contribution navigation |
 | Empty state | EmptyState | frontend/src/components/EmptyState.tsx | Goal, debt, bill starting actions | Browser empty lists |
 | Read-only resource | useDashboardResource | Resource URL and attempt identify current data | Abort on change; 15-second timeout; explicit Retry | Loading/error/recovery browser checks |
+| Authentication | AuthGate and auth.ts | backend/app/auth.py and backend/SUPABASE.md | Email/password, session recovery, sign out | Auth and ownership tests; browser sign-in flow |
 | Statement library | StatementLibrary and StatementDetail | backend/statements.py | Paginated library, individual summary, original CSV download | Statement API tests and browser reopen/reload |
 
 ## Behavior
 
 StatCard and DashboardPanel accept optional CardTone variants (sky, leaf, sun, rose). Tones identify button and highlight accents; card surfaces and ordinary typography remain neutral, with shared tokens owned by index.css and scoped rules in colors.css. Navigation, forms, loading/error states and financial calculations retain their existing behavior.
 
-Dashboard is the default app view for an empty URL hash; explicit `#/` remains the landing page and the MyBudgetPro brand links there. The sidebar orders Dashboard, Budget (with Paycheque planner), Accounts, Activity history, Your Budget Wrapped. DashboardPanel owns overview section loading/error/retry states and useDashboardResource cancels superseded reads. Dashboard shows bounded account, goal, debt and bill previews, with links to their management pages. Actual recorded balances exclude planned paycheque allocations; accounts and goal savings are never combined. Bill reminders include recurring next occurrences even while the preceding occurrence is paid, and exclude paid one-time bills. Spending uses only the latest uploaded statement with its filename and date range; the summary endpoint does not fetch transaction rows. Budget owns paycheque plans, goal/debt editing and bill payments, with overview analytics moved to Dashboard. No authentication, currency, categorization or cross-statement consolidation rules are introduced.
+Dashboard is the default app view for an empty URL hash; explicit `#/` remains the landing page and the MyBudgetPro brand links there. The sidebar orders Dashboard, Budget (with Paycheque planner), Accounts, Activity history, Your Budget Wrapped. DashboardPanel owns overview section loading/error/retry states and useDashboardResource cancels superseded reads. Dashboard shows bounded account, goal, debt and bill previews, with links to their management pages. Actual recorded balances exclude planned paycheque allocations; accounts and goal savings are never combined. Bill reminders include recurring next occurrences even while the preceding occurrence is paid, and exclude paid one-time bills. Spending uses only the latest uploaded statement with its filename and date range; the summary endpoint does not fetch transaction rows. Budget owns paycheque plans, goal/debt editing and bill payments, with overview analytics moved to Dashboard. Currency, categorization and cross-statement consolidation rules remain unchanged. Authentication and ownership follow backend/SUPABASE.md.
 
 The current React/Vite hash routes and APIs remain authoritative. Creation returns to its list and announces success. Goal updates record contributions separately from goal edits. Debt and bill payments record history without sending money. Recurring bills follow the existing monthly due-date calculation. Bills analytics sums all recorded bill amounts, so the summary label is Recorded bills.
 
@@ -117,3 +118,19 @@ filtered page, preserves its URL state and moves focus to the ledger heading.
 The server clamps a now-empty last page. Missing targets and incomplete historic
 undo context have disabled actions with visible reasons. Schedule/balance conflicts
 remain server-owned and return 409 without partial changes. Undo sends no money.
+
+
+Authentication: the entire financial app is gated until Supabase has supplied a
+session. The API independently verifies every access token and scopes every
+financial query to that user. auth.ts is the only owner for API requests and
+session expiry; it attaches bearer tokens only to relative /api/ paths. Original
+CSV downloads use this same authenticated request path. Tokens are managed by the
+official SDK in sessionStorage, scoped to the current tab; passwords are never
+stored. The same-account reauthentication panel hides and makes mounted content
+inert while retaining drafts in memory. An account change remounts all financial
+screens, and explicit sign-out clears them. Sign out uses the existing unsaved
+changes confirmation. Login failure preserves email and clears the password.
+There is no self-service sign-up or password recovery screen; users are created
+and password resets handled by the app owner in Supabase. Source: backend/SUPABASE.md.
+
+AppForm accepts an optional feedback slot and reserved validation space for sign-in. Validation and server errors share one inline region so credential failures and invalid submissions do not move the submit button. Other forms retain their existing layout.

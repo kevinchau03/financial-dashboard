@@ -58,10 +58,31 @@ def test_upload_csv(client):
 @pytest.mark.parametrize('name,data,status', [
     ('test.txt', b'a\n1', 400), ('test.csv', b'', 400),
     ('test.csv', b'a,b\n1', 400), ('test.csv', b'a\n"unterminated', 400),
-    ('test.csv', b'\xff', 400), ('test.csv', b'x' * (5 * 1024 * 1024 + 1), 413),
+    ('test.csv', b'\xff', 400), ('test.csv', b'x' * (4_500_000 + 1), 413),
 ], ids=['extension', 'empty', 'columns', 'quotes', 'encoding', 'size'])
 def test_invalid_upload(client, name, data, status):
     assert client.post('/api/upload_csv', files={'file': (name, data, 'text/csv')}).status_code == status
+
+
+@pytest.mark.parametrize('size', [4_499_999, 4_500_000, 4_500_001])
+def test_csv_upload_size_boundary(client, monkeypatch, size):
+    from app.routers import uploads
+    parsed_sizes = []
+
+    def validate_csv(contents, **kwargs):
+        parsed_sizes.append(len(contents))
+        raise ValueError('Reached CSV validation.')
+
+    monkeypatch.setattr(uploads, 'read_csv', validate_csv)
+    response = client.post('/api/upload_csv', files={'file': ('boundary.csv', b'x' * size, 'text/csv')})
+    if size <= 4_500_000:
+        assert response.status_code == 400
+        assert response.json()['detail'] == 'Reached CSV validation.'
+        assert parsed_sizes == [size]
+    else:
+        assert response.status_code == 413
+        assert response.json()['detail'] == 'CSV files must be no larger than 4.5 MB.'
+        assert parsed_sizes == []
 
 
 def test_headers_only_and_duplicate_headers(client):

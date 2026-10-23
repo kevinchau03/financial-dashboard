@@ -1,3 +1,4 @@
+from conftest import TEST_USER_ID
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from decimal import Decimal
@@ -126,15 +127,15 @@ def legacy_database(tmp_path, amount='12.34'):
     engine = create_engine(f"sqlite:///{(tmp_path / 'legacy.db').as_posix()}")
     Base.metadata.create_all(engine)
     with engine.begin() as connection:
-        connection.execute(text("INSERT INTO bills (id,name,amount,recurring,is_paid) VALUES (1,'Phone',20,0,1)"))
-        connection.execute(text("INSERT INTO debts (id,name,amount,current_amount) VALUES (1,'Loan',100,12.34)"))
-        connection.execute(text("INSERT INTO financial_goals (id,name,target_amount,current_amount) VALUES (1,'Trip',100,5.67)"))
+        connection.execute(text("INSERT INTO bills (user_id,id,name,amount,recurring,is_paid) VALUES ('00000000000040008000000000000001',1,'Phone',20,0,1)"))
+        connection.execute(text("INSERT INTO debts (user_id,id,name,amount,current_amount) VALUES ('00000000000040008000000000000001',1,'Loan',100,12.34)"))
+        connection.execute(text("INSERT INTO financial_goals (user_id,id,name,target_amount,current_amount) VALUES ('00000000000040008000000000000001',1,'Trip',100,5.67)"))
         for kind in ['bill', 'debt']:
             connection.execute(text(f'CREATE TABLE {kind}_payments (id INTEGER PRIMARY KEY, {kind}_id INTEGER, amount NUMERIC(14,2), paid_on DATE, due_date DATE)'))
             connection.execute(text(f"INSERT INTO {kind}_payments VALUES (1,1,:amount,'2025-01-02','2025-01-01')"), {'amount': amount})
-        connection.execute(text('INSERT INTO paycheques (id,amount) VALUES (1,20)'))
+        connection.execute(text("INSERT INTO paycheques (user_id,id,amount) VALUES ('00000000000040008000000000000001',1,20)"))
         for allocation_id, kind, cents in [(1, 'goal', 567), (2, 'debt', 1234)]:
-            connection.execute(text(f"INSERT INTO paycheque_allocations (id,paycheque_id,{kind}_id,kind,name,amount_cents,status,completed_on) VALUES (:id,1,1,:kind,'Saved name',:cents,'completed','2025-01-02')"),
+            connection.execute(text(f"INSERT INTO paycheque_allocations (user_id,id,paycheque_id,{kind}_id,kind,name,amount_cents,status,completed_on) VALUES ('00000000000040008000000000000001',:id,1,1,:kind,'Saved name',:cents,'completed','2025-01-02')"),
                                {'id': allocation_id, 'kind': kind, 'cents': cents})
     return engine
 
@@ -143,7 +144,7 @@ def test_migration_preserves_history_exact_amounts_and_balances_once(tmp_path):
     engine = legacy_database(tmp_path)
     try:
         for _ in range(2):
-            initialize_database(engine)
+            initialize_database(engine, legacy_owner=TEST_USER_ID)
         assert 'bill_payments' not in inspect(engine).get_table_names()
         assert 'debt_payments' not in inspect(engine).get_table_names()
         with Session(engine) as session:
@@ -161,13 +162,13 @@ def test_migration_failure_preserves_legacy_tables_and_can_be_retried(tmp_path):
     engine = legacy_database(tmp_path, amount='0')
     try:
         with pytest.raises(IntegrityError):
-            initialize_database(engine)
+            initialize_database(engine, legacy_owner=TEST_USER_ID)
         assert {'bill_payments', 'debt_payments'} <= set(inspect(engine).get_table_names())
         with engine.begin() as connection:
             assert connection.scalar(text('SELECT COUNT(*) FROM payments')) == 0
             connection.execute(text('UPDATE bill_payments SET amount=12.34'))
             connection.execute(text('UPDATE debt_payments SET amount=12.34'))
-        initialize_database(engine)
+        initialize_database(engine, legacy_owner=TEST_USER_ID)
         with engine.connect() as connection:
             assert connection.scalar(text('SELECT COUNT(*) FROM payments')) == 3
     finally:

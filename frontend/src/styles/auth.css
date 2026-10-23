@@ -1,0 +1,19 @@
+.auth-page { min-height: 100svh; display: grid; align-items: center; padding: clamp(1.25rem, 5vw, 5rem); }
+.auth-panel { width: min(100%, 30rem); margin-inline: auto; }
+.auth-panel h1 { font-size: clamp(2rem, 5vw, 2.75rem); line-height: 1.16; margin-block: 1.5rem 1rem; }
+.auth-panel h1:focus { outline: none; }
+.auth-panel > p:not(.brand) { color: var(--muted); }
+.auth-panel form { display: grid; gap: .6rem; margin-top: 2rem; }
+.auth-panel label { font-weight: 600; }
+.auth-panel input { width: 100%; min-width: 0; min-height: 44px; }
+.auth-panel button { min-height: 44px; }
+.auth-password { display: flex; gap: .5rem; }
+.auth-password button { min-width: 5rem; }
+.auth-panel label:not(:first-child) { margin-top: .5rem; }
+.auth-panel .form-errors { min-height: 4rem; margin: 0; padding: 0; border: 0; background: none; }
+.auth-panel .form-errors p { margin: .25rem 0; }
+.auth-help { margin-top: 1.5rem; font-size: .85rem; }
+.auth-session-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem 1rem; padding: .65rem 1.25rem; border-bottom: 1px solid var(--border); background: var(--surface); font-size: .85rem; }
+.auth-session-bar span { overflow-wrap: anywhere; }
+.auth-session-bar button { min-height: 44px; }
+.auth-session-bar p { flex-basis: 100%; margin: 0; color: var(--danger); text-align: right; }

@@ -4,7 +4,23 @@ from app.database import Base
 from app import models  # Register all tables before creating metadata.
 
 
-def initialize_database(engine):
+def initialize_database(engine, *, legacy_owner=None):
+    if engine.dialect.name != 'sqlite':
+        raise RuntimeError('Run alembic upgrade head to initialize PostgreSQL.')
+    # Existing single-user SQLite files are only claimed by an explicitly named
+    # owner. The Supabase setup never opens or changes the original SQLite file.
+    existing = inspect(engine).get_table_names()
+    legacy_tables = [table.name for table in Base.metadata.sorted_tables if table.name in existing
+                     and 'user_id' not in {c['name'] for c in inspect(engine).get_columns(table.name)}]
+    if legacy_tables and legacy_owner is None:
+        raise RuntimeError('Legacy SQLite database: use a fresh database or an explicit ownership migration.')
+    if legacy_owner is not None:
+        from uuid import UUID
+        owner = UUID(str(legacy_owner)).hex
+        with engine.begin() as connection:
+            for name in legacy_tables:
+                connection.execute(text(f'ALTER TABLE {name} ADD COLUMN user_id CHAR(32)'))
+                connection.execute(text(f'UPDATE {name} SET user_id = :owner WHERE user_id IS NULL'), {'owner': owner})
     Base.metadata.create_all(engine)
     payment_columns = {column['name'] for column in inspect(engine).get_columns('payments')}
     with engine.begin() as connection:
@@ -27,7 +43,8 @@ def initialize_database(engine):
                                  'request_id': 'VARCHAR(36)', 'request_fingerprint': 'VARCHAR(64)'}.items():
             if name not in paycheque_columns:
                 connection.execute(text(f'ALTER TABLE paycheques ADD COLUMN {name} {definition}'))
-        connection.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS ix_paycheques_request_id ON paycheques(request_id)'))
+        connection.execute(text('DROP INDEX IF EXISTS ix_paycheques_request_id'))
+        connection.execute(text('CREATE UNIQUE INDEX IF NOT EXISTS ix_paycheques_user_request ON paycheques(user_id, request_id)'))
     if 'csv_contents' not in {column['name'] for column in inspect(engine).get_columns('statement_imports')}:
         with engine.begin() as connection:
             connection.execute(text('ALTER TABLE statement_imports ADD COLUMN csv_contents BLOB'))
@@ -39,4 +56,4 @@ def initialize_database(engine):
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE bills ADD COLUMN is_paid BOOLEAN NOT NULL DEFAULT 0"))
     from app.payment_migration import migrate_payments
-    migrate_payments(engine)
+    migrate_payments(engine, legacy_owner=legacy_owner)

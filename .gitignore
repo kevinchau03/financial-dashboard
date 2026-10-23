@@ -12,6 +12,7 @@ backend/*.db
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # agent files
 DESIGN.MD

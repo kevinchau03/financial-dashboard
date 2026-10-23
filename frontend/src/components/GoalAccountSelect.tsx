@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useState } from 'react'
 import type { Account } from './AccountForm'
 import { amount } from '../api'
@@ -11,7 +12,7 @@ export default function GoalAccountSelect({ accountId }: { accountId?: number | 
     const controller = new AbortController()
     async function load() {
       try {
-        const response = await fetch('/api/accounts', { signal: controller.signal })
+        const response = await apiFetch('/api/accounts', { signal: controller.signal })
         if (!response.ok) throw new Error('Unable to load accounts. Retry before changing the linked account.')
         const data: Account[] = await response.json()
         if (!controller.signal.aborted) setAccounts(data)

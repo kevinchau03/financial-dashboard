@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useRef, useState } from 'react'
 import type { Payment } from '../types'
 import { amount } from '../api'
@@ -16,7 +17,7 @@ export default function UndoPayment({ payment, onUndo }: { payment: Payment; onU
     setBusy(true)
     setError('')
     try {
-      const response = await fetch(`/api/payments/${payment.id}`, {
+      const response = await apiFetch(`/api/payments/${payment.id}`, {
         method: 'DELETE', signal: AbortSignal.timeout(15000),
       })
       if (!response.ok) {

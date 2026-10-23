@@ -161,3 +161,17 @@ no palette changes. Disabled undo actions show their explanation in the row. The
 semantic Actions column remains reachable through the existing horizontal scroll
 region on narrow screens. Successful undo refetches server totals, clamps paging
 and focuses the ledger heading. No optimistic financial changes are shown.
+
+
+## Authentication
+
+AuthGate uses the established cream background, Noto Sans, meadow buttons and
+shared AppForm validation. A quiet 30rem form owns email/password, a labelled
+show/hide control, inline errors, and a shared reserved feedback slot in AppForm. Supabase handles
+credentials; the app has invite-only access with no public sign-up screen.
+Session checking and unavailable configuration have explicit status and retry
+states. The signed-in bar shows the account email and a sign-out action. It wraps
+on narrow screens and participates in normal document flow. On API session expiry,
+financial content becomes hidden and inert; reauthentication with the same account
+retains mounted drafts. Changing accounts remounts financial content; signing out
+clears it. No financial drafts are written to browser storage.

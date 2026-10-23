@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import AutoTextarea from './AutoTextarea'
 import EmptyState from './EmptyState'
 import AppForm from './AppForm'
@@ -63,7 +64,7 @@ export default function Bills({ onChange = () => undefined }: { onChange?: () =>
     const controller = new AbortController()
     async function loadBills() {
       try {
-        const response = await fetch('/api/bills', { signal: controller.signal })
+        const response = await apiFetch('/api/bills', { signal: controller.signal })
         if (!response.ok) throw new Error('Failed to load bills')
         const savedBills: Bill[] = await response.json()
         if (!controller.signal.aborted) setBills(savedBills)
@@ -85,7 +86,7 @@ export default function Bills({ onChange = () => undefined }: { onChange?: () =>
     setSaveError('')
     setNotice('')
     try {
-      const response = await fetch('/api/bills', {
+      const response = await apiFetch('/api/bills', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

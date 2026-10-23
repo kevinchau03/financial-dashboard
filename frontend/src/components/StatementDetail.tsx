@@ -1,3 +1,4 @@
+import { apiFetch } from '../auth'
 import { useEffect, useRef, useState } from 'react'
 import StatCard from './StatCard'
 import StatementWrapped from './StatementWrapped'
@@ -13,6 +14,9 @@ export default function StatementDetail({ statementId }: { statementId: number }
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [page, setPage] = useState(0)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState('')
+  const downloadPending = useRef(false)
   const heading = useRef<HTMLHeadingElement>(null)
   const transactionsHeading = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
@@ -22,7 +26,7 @@ export default function StatementDetail({ statementId }: { statementId: number }
       setLoading(true)
       setError('')
       try {
-        const response = await fetch(`/api/statements/${statementId}`, { signal: controller.signal })
+        const response = await apiFetch(`/api/statements/${statementId}`, { signal: controller.signal })
         if (!response.ok) throw new Error(response.status === 404 ? 'This statement could not be found. Return to your saved statements to choose another file.' : 'Unable to load this statement. Please try again.')
         const data: StatementContents = await response.json()
         if (!controller.signal.aborted) setContents(data)
@@ -33,6 +37,23 @@ export default function StatementDetail({ statementId }: { statementId: number }
     void load()
     return () => controller.abort()
   }, [statementId, attempt])
+  async function download() {
+    if (downloadPending.current || !contents) return
+    downloadPending.current = true
+    setDownloading(true)
+    setDownloadError('')
+    try {
+      const response = await apiFetch(`/api/statements/${statementId}/file`, { signal: AbortSignal.timeout(15000) })
+      if (!response.ok) throw new Error('Unable to download this file. Please try again.')
+      const url = URL.createObjectURL(await response.blob())
+      const link = document.createElement('a')
+      link.href = url
+      link.download = contents.filename
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (error) { setDownloadError(error instanceof Error ? error.message : 'Unable to download this file. Please try again.') }
+    finally { downloadPending.current = false; setDownloading(false) }
+  }
   return <div className="statement-detail" aria-busy={loading}>
     <a className="text-link" href="#/budget-wrapped">← All saved statements</a>
     <h2 ref={heading} tabIndex={-1} className="statement-detail-title">{contents?.filename ?? 'Statement summary'}</h2>
@@ -42,8 +63,9 @@ export default function StatementDetail({ statementId }: { statementId: number }
       {experience === 'play' ? <StatementWrapped statementId={statementId} filename={contents.filename} transactions={contents.rows} onClose={() => { setExperience('summary'); requestAnimationFrame(() => heading.current?.focus()) }} /> : <>
       <div className="statement-summary-toolbar"><p className="statement-detail-meta">{contents.stats.start_date && contents.stats.end_date ? `${statementDate(contents.stats.start_date)} – ${statementDate(contents.stats.end_date)}` : 'No transaction dates'}<br />{contents.row_count.toLocaleString()} transactions</p>
       <div className="actions"><button type="button" onClick={() => setExperience('play')}>Play Budget Wrapped</button><button type="button" className="secondary" onClick={() => { transactionsHeading.current?.focus(); transactionsHeading.current?.scrollIntoView({ behavior: 'instant', block: 'start' }) }}>Review transactions</button></div></div>
-      {contents.has_file ? <a className="statement-download text-link" href={`/api/statements/${statementId}/file`} download>Download original CSV</a>
+      {contents.has_file ? <button type="button" className="statement-download secondary" disabled={downloading} aria-busy={downloading} onClick={() => void download()}>{downloading ? 'Downloading CSV…' : 'Download original CSV'}</button>
         : <p className="upload-help statement-download">To download this older file, upload the same CSV again. Your saved summary will stay available.</p>}
+      {downloadError && <p role="alert">{downloadError}</p>}
       <section className="statement-summary-metrics" aria-label="Statement summary">
         <div className="analytics-cards">
           <StatCard tone="leaf" title="Money in" value={amount(contents.stats.total_income)} description="All credits" />

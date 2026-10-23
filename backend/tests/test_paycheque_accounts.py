@@ -66,7 +66,7 @@ def test_upgrade_keeps_existing_allocations(tmp_path, monkeypatch):
     Base.metadata.create_all(engine, tables=[table for table in Base.metadata.sorted_tables if table.name != 'paycheque_allocations'])
     with engine.begin() as connection:
         connection.execute(text('CREATE TABLE paycheque_allocations (id INTEGER PRIMARY KEY, paycheque_id INTEGER NOT NULL, goal_id INTEGER, debt_id INTEGER, kind VARCHAR(8) NOT NULL, name VARCHAR(120) NOT NULL, amount_cents INTEGER NOT NULL, status VARCHAR(12) NOT NULL, completed_on DATE)'))
-        connection.execute(text("INSERT INTO paycheques (id, amount, allocated_cents) VALUES (1, 100, 2500)"))
+        connection.execute(text("INSERT INTO paycheques (user_id,id, amount, allocated_cents) VALUES ('00000000000040008000000000000001',1, 100, 2500)"))
         connection.execute(text("INSERT INTO paycheque_allocations (paycheque_id, kind, name, amount_cents, status) VALUES (1, 'goal', 'Old goal', 2500, 'planned')"))
     monkeypatch.setattr(main, 'engine', engine)
     try:

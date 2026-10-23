@@ -1,3 +1,4 @@
+import { apiFetch } from './auth'
 export const amount = (value: string) => Number(value).toLocaleString(undefined, {
   style: 'currency',
   currency: 'CAD',
@@ -12,7 +13,7 @@ export function today() {
 }
 
 export async function saveRecord<T>(url: string, method: string, data: object): Promise<T> {
-  const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+  const response = await apiFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
   if (!response.ok) {
     const body = await response.json().catch(() => null)
     const detail = body?.detail
