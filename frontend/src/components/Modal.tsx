@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import { unsavedForms } from '../unsavedForms'
 import { AuthenticationVisibility } from '../authVisibility'
 
-export default function Modal({ title, busy = false, onClose, children }: {
-  title: string; busy?: boolean; onClose: () => void; children: ReactNode
+export default function Modal({ title, busy = false, onClose, children, className = '', headingVisibility = 'visible' }: {
+  title: string; busy?: boolean; onClose: () => void; children: ReactNode; className?: string; headingVisibility?: 'visible' | 'accessible'
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -33,15 +33,15 @@ export default function Modal({ title, busy = false, onClose, children }: {
       trigger?.focus()
     }
   }, [visible])
-  return <dialog ref={dialog} className="modal" aria-labelledby={titleId} onCancel={event => {
+  return <dialog ref={dialog} className={`modal ${className}`} aria-labelledby={titleId} onCancel={event => {
     event.preventDefault()
     if (confirmClose) setConfirmClose(false)
     else requestClose()
   }}>
-    <div className="modal-heading">
+    {headingVisibility === 'accessible' ? <h2 id={titleId} className="sr-only">{title}</h2> : <div className="modal-heading">
       <h2 id={titleId}>{title}</h2>
       <button type="button" className="secondary" disabled={busy} onClick={requestClose} aria-label={`Close ${title}`}>Close</button>
-    </div>
+    </div>}
     <div hidden={confirmClose}>{children}</div>
     {confirmClose && <div role="alert" className="discard-prompt">
       <p>Your changes have not been saved. Discard them?</p>

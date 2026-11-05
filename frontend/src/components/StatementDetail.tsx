@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import StatCard from './StatCard'
 import DeleteItem from './DeleteItem'
 import StatementWrapped from './StatementWrapped'
+import Modal from './Modal'
 import { amount } from '../api'
 import { statementDate } from '../statementTypes'
 import type { StatementContents } from '../statementTypes'
@@ -61,7 +62,13 @@ export default function StatementDetail({ statementId, onDelete }: { statementId
     {loading && <p role="status">Loading your statement…</p>}
     {error && <div><p role="alert">{error}</p><button type="button" className="secondary" onClick={() => setAttempt(previous => previous + 1)}>Try again</button></div>}
     {!loading && !error && contents && <>
-      {experience === 'play' ? <StatementWrapped statementId={statementId} filename={contents.filename} transactions={contents.rows} onClose={() => { setExperience('summary'); requestAnimationFrame(() => heading.current?.focus()) }} /> : <>
+      {experience === 'play' && <Modal title="Your Budget Wrapped" className="wrapped-player-modal" headingVisibility="accessible" onClose={() => setExperience('summary')}>
+        <StatementWrapped statementId={statementId} filename={contents.filename} transactions={contents.rows} onClose={() => setExperience('summary')} onReviewTransactions={() => {
+          setExperience('summary')
+          requestAnimationFrame(() => { transactionsHeading.current?.focus(); transactionsHeading.current?.scrollIntoView({ behavior: 'instant', block: 'start' }) })
+        }} />
+      </Modal>}
+      <>
       <div className="statement-summary-toolbar"><p className="statement-detail-meta">{contents.stats.start_date && contents.stats.end_date ? `${statementDate(contents.stats.start_date)} – ${statementDate(contents.stats.end_date)}` : 'No transaction dates'}<br />{contents.row_count.toLocaleString()} transactions</p>
       <div className="actions"><button type="button" onClick={() => setExperience('play')}>Play Budget Wrapped</button><button type="button" className="secondary" onClick={() => { transactionsHeading.current?.focus(); transactionsHeading.current?.scrollIntoView({ behavior: 'instant', block: 'start' }) }}>Review transactions</button></div></div>
       {contents.has_file ? <button type="button" className="statement-download secondary" disabled={downloading} aria-busy={downloading} onClick={() => void download()}>{downloading ? 'Downloading CSV…' : 'Download original CSV'}</button>
@@ -91,7 +98,7 @@ export default function StatementDetail({ statementId, onDelete }: { statementId
           <button type="button" className="secondary" disabled={(page + 1) * 50 >= contents.row_count} onClick={() => setPage(previous => previous + 1)}>Next</button>
         </nav>}
       </section>
-      </>}
+      </>
     </>}
   </div>
 }

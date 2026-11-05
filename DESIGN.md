@@ -87,6 +87,12 @@ Panels use 12px corners, controls 7px, and goal/debt rows 8px. Progress tracks a
 
 ## Components
 
+Budget Wrapped uses a single modal surface: the accessible-only Modal heading delegates the visible header/exit to StatementWrapped. The inner section has no border, shadow, background or padding. Compact metadata, a flexible slide and anchored navigation fit the viewport; the dense highest-day table is reviewed through the summary's transaction table. Ordinary slides do not require scrolling; the dialog retains overflow recovery for extreme zoom or long content rather than clipping it.
+
+The wrapped-player-modal variant fills the viewport with 32px desktop margins and 12px mobile margins, using an 85% black backdrop. Its header stays visible and its body owns scrolling; the player stretches to the available height. This restores a broad, full-page reading area inside the dialog without changing other modal sizes.
+
+Budget Wrapped opens in the shared Modal with a wide player variant and dimmed backdrop, retaining the summary beneath it. The first of seven screens presents the statement title with a brief decorative confetti burst for every title; reduced motion uses stationary pieces. Existing accent tokens supply the confetti colours. Escape, close and Finish restore focus to Play Budget Wrapped. The original six insights follow the title screen. Runtime owner: StatementWrapped, StatementDetail and styles/statements.css.
+
 StatementDetail exposes a separate Delete statement action using the shared DeleteItem/Modal confirmation and Notice feedback. The dialog names the file and transaction count; success returns to the library with page-heading focus. styles/statements.css owns action spacing and consumes existing shared control styles without new tokens.
 
 Debt forms use a native type select and conditional metadata fields, reusing AppForm, AutoTextarea, native dates, existing amount-fields layout, Modal and CollapsibleItem. Credit cards and lines of credit expose credit limits and minimum payments; loan and personal-debt variants expose recurring amounts and native frequency selection. The collapsed summary includes the debt type. Credit use is based on the recorded remaining balance, and all schedule/interest fields are explicitly reference-only. Existing palette, focus, spacing and scrollbar tokens remain canonical.

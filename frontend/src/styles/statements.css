@@ -108,3 +108,52 @@
   .wrapped-page .statement-upload-panel { padding: 18px; }
 }
 .statement-delete-action { margin: 16px 0 24px; }
+.modal.wrapped-player-modal { width: calc(100% - 64px); height: calc(100dvh - 64px); max-height: calc(100dvh - 64px); padding: clamp(16px, 2vw, 28px); }
+.modal.wrapped-player-modal[open] { display: flex; flex-direction: column; overflow: auto; }
+.modal.wrapped-player-modal::backdrop { background: rgb(0 0 0 / 70%); }
+.wrapped-player-modal > div[hidden] { display: none; }
+.wrapped-player-modal > div:not([hidden]) { display: flex; flex: 1; min-height: min-content; }
+.wrapped-player-modal .statement-wrapped { display: flex; flex-direction: column; flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.wrapped-player-modal .wrapped-player-heading { flex-wrap: nowrap; gap: 12px; }
+.wrapped-player-modal .wrapped-player-heading button { flex-shrink: 0; }
+.wrapped-player-modal .wrapped-file { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 8px 0 0; }
+.wrapped-player-modal .wrapped-period { margin: 4px 0 0; font-size: .85rem; }
+.wrapped-player-modal .wrapped-progress { margin: 0; flex-shrink: 0; }
+.wrapped-player-modal .wrapped-slide { flex: 1; min-height: 0; display: grid; align-content: center; justify-items: start; gap: 10px; padding: 12px 0 20px; overflow-wrap: anywhere; }
+.wrapped-player-modal .wrapped-slide > p, .wrapped-player-modal .wrapped-slide > h2 { margin: 0; }
+.wrapped-player-modal .wrapped-slide h2 { font-size: clamp(1.35rem, 2.6vw, 2.5rem); max-width: 40ch; }
+.wrapped-player-modal .wrapped-metric { font-size: clamp(1.8rem, 4.5vw, 4rem); max-width: 28ch; }
+.wrapped-player-modal .wrapped-explanation { font-size: .9rem; max-width: 72ch; }
+.wrapped-player-modal .wrapped-transaction-detail, .wrapped-player-modal .wrapped-day-detail { border: 0; margin: 0; padding: 0; }
+.wrapped-player-modal .wrapped-transaction-detail p, .wrapped-player-modal .wrapped-day-detail h3 { margin: 6px 0; }
+.wrapped-player-modal .wrapped-player-controls { margin-top: auto; flex-shrink: 0; padding-top: 8px; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .modal.wrapped-player-modal { width: calc(100% - 24px); height: calc(100dvh - 24px); max-height: calc(100dvh - 24px); padding: 16px; }
+  .wrapped-player-modal .wrapped-slide { gap: 8px; padding-block: 8px 12px; }
+  .wrapped-player-modal .wrapped-explanation { font-size: .85rem; }
+  .wrapped-player-modal .wrapped-player-controls { gap: 8px; }
+  .wrapped-player-modal .wrapped-player-controls button { padding-inline: 10px; }
+}
+@media (max-height: 560px) {
+  .modal.wrapped-player-modal { width: calc(100% - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); padding: 12px 20px; }
+  .wrapped-player-modal .wrapped-slide { gap: 4px; padding-block: 4px 8px; }
+  .wrapped-player-modal .wrapped-slide h2 { font-size: 1.2rem; }
+  .wrapped-player-modal .wrapped-metric { font-size: 1.7rem; }
+  .wrapped-player-modal .wrapped-file, .wrapped-player-modal .wrapped-period { display: inline; margin: 0; font-size: .75rem; }
+  .wrapped-player-modal .wrapped-explanation { font-size: .8rem; }
+}
+.wrapped-player-modal .wrapped-progress { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.wrapped-slide { position: relative; isolation: isolate; }
+.wrapped-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
+.wrapped-confetti span { position: absolute; top: -16px; left: var(--confetti-x); width: 8px; height: 14px; background: var(--accent-leaf); animation: wrapped-confetti-fall 2.2s var(--confetti-delay) ease-out both; }
+.wrapped-confetti span:nth-child(3n) { background: var(--accent-sky); }
+.wrapped-confetti span:nth-child(3n + 1) { background: var(--accent-sun); }
+.wrapped-confetti span:nth-child(even) { border-radius: 50%; width: 9px; height: 9px; }
+@keyframes wrapped-confetti-fall {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0); }
+  10% { opacity: .85; }
+  100% { opacity: 0; transform: translate(var(--confetti-drift), 380px) rotate(var(--confetti-turn)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wrapped-confetti span { animation: none; top: calc(12% + var(--confetti-x) / 2); opacity: .2; transform: rotate(var(--confetti-turn)); }
+}
