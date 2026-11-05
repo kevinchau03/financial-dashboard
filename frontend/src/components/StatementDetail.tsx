@@ -1,13 +1,14 @@
 import { apiFetch } from '../auth'
 import { useEffect, useRef, useState } from 'react'
 import StatCard from './StatCard'
+import DeleteItem from './DeleteItem'
 import StatementWrapped from './StatementWrapped'
 import { amount } from '../api'
 import { statementDate } from '../statementTypes'
 import type { StatementContents } from '../statementTypes'
 import { sumAmounts } from '../dashboardSummary'
 
-export default function StatementDetail({ statementId }: { statementId: number }) {
+export default function StatementDetail({ statementId, onDelete }: { statementId: number; onDelete: (filename: string) => void }) {
   const [experience, setExperience] = useState<'play' | 'summary'>('summary')
   const [contents, setContents] = useState<StatementContents | null>(null)
   const [loading, setLoading] = useState(true)
@@ -66,6 +67,7 @@ export default function StatementDetail({ statementId }: { statementId: number }
       {contents.has_file ? <button type="button" className="statement-download secondary" disabled={downloading} aria-busy={downloading} onClick={() => void download()}>{downloading ? 'Downloading CSV…' : 'Download original CSV'}</button>
         : <p className="upload-help statement-download">To download this older file, upload the same CSV again. Your saved summary will stay available.</p>}
       {downloadError && <p role="alert">{downloadError}</p>}
+      <div className="statement-delete-action"><DeleteItem kind="statements" id={statementId} name={contents.filename} transactionCount={contents.row_count} disabled={downloading} onDelete={() => onDelete(contents.filename)} /></div>
       <section className="statement-summary-metrics" aria-label="Statement summary">
         <div className="analytics-cards">
           <StatCard tone="leaf" title="Money in" value={amount(contents.stats.total_income)} description="All credits" />

@@ -87,6 +87,8 @@ Panels use 12px corners, controls 7px, and goal/debt rows 8px. Progress tracks a
 
 ## Components
 
+StatementDetail exposes a separate Delete statement action using the shared DeleteItem/Modal confirmation and Notice feedback. The dialog names the file and transaction count; success returns to the library with page-heading focus. styles/statements.css owns action spacing and consumes existing shared control styles without new tokens.
+
 Debt forms use a native type select and conditional metadata fields, reusing AppForm, AutoTextarea, native dates, existing amount-fields layout, Modal and CollapsibleItem. Credit cards and lines of credit expose credit limits and minimum payments; loan and personal-debt variants expose recurring amounts and native frequency selection. The collapsed summary includes the debt type. Credit use is based on the recorded remaining balance, and all schedule/interest fields are explicitly reference-only. Existing palette, focus, spacing and scrollbar tokens remain canonical.
 
 `StatCard` remains the reusable summary owner. `CollapsibleItem` retains native details interaction. `EmptyState` provides title, explanation and a working creation action. Forms use `AppForm` for owned constraint feedback, linked errors, first invalid focus, and duplicate submission protection. `AutoTextarea` grows with input. Date fields and the Accounts select deliberately retain browser/OS popup ownership.

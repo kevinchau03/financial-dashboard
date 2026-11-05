@@ -107,3 +107,4 @@
   .statement-summary-toolbar button { flex: 1; }
   .wrapped-page .statement-upload-panel { padding: 18px; }
 }
+.statement-delete-action { margin: 16px 0 24px; }

@@ -2,7 +2,7 @@ from decimal import Decimal
 from datetime import date
 from hashlib import sha256
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.models import StatementImport, Transaction
@@ -73,6 +73,17 @@ def find_statement(session: Session, statement_id: int) -> StatementImport:
     if statement is None:
         raise HTTPException(404, 'Statement not found.')
     return statement
+
+
+def delete_statement(statement_id: int, session: Session) -> None:
+    statement = find_statement(session, statement_id)
+    try:
+        session.execute(delete(Transaction).where(Transaction.statement_id == statement_id))
+        session.delete(statement)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
 
 
 def read_statement(statement_id: int, session: Session):

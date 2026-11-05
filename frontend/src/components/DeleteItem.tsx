@@ -2,14 +2,14 @@ import { apiFetch } from '../auth'
 import { useRef, useState } from 'react'
 import Modal from './Modal'
 
-export default function DeleteItem({ kind, id, name, disabled, onDelete, resolve = false }: {
-  kind: 'goals' | 'bills' | 'debts' | 'paycheques'; id: number; name: string; disabled?: boolean; onDelete: () => void; resolve?: boolean
+export default function DeleteItem({ kind, id, name, disabled, onDelete, resolve = false, transactionCount }: {
+  kind: 'goals' | 'bills' | 'debts' | 'paycheques' | 'statements'; id: number; name: string; disabled?: boolean; onDelete: () => void; resolve?: boolean; transactionCount?: number
 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const pending = useRef(false)
-  const label = kind === 'goals' ? 'goal' : kind === 'bills' ? 'bill' : kind === 'paycheques' ? 'paycheque' : 'debt'
+  const label = kind === 'goals' ? 'goal' : kind === 'bills' ? 'bill' : kind === 'paycheques' ? 'paycheque' : kind === 'statements' ? 'statement' : 'debt'
 
   const resolving = kind === 'debts' && resolve
   const action = resolving ? 'Resolve debt' : `Delete ${label}`
@@ -39,7 +39,7 @@ export default function DeleteItem({ kind, id, name, disabled, onDelete, resolve
   return <>
     <button type="button" className="secondary" disabled={disabled} onClick={() => { setError(''); setOpen(true) }}>{action}</button>
     {open && <Modal title={`${resolving ? 'Resolve' : 'Delete'} ${name}?`} busy={busy} onClose={() => setOpen(false)}>
-      {resolving ? <p>This debt is paid off. Resolving it permanently deletes the debt. Its recorded payments remain in Activity history. This cannot be undone.</p> : kind === 'paycheques' ? <p>This permanently removes this paycheque and its allocation history, including unfinished plans. Recorded goal savings, account balances and debt payments stay unchanged. This cannot be undone.</p> : <p>This permanently removes this {label}. Recorded payments and contributions remain in Activity history. This cannot be undone.</p>}
+      {kind === 'statements' ? <p>This permanently deletes {name}, its saved original CSV, and all {transactionCount?.toLocaleString() ?? 'associated'} transactions in this statement. Its summary and Budget Wrapped will no longer be available. This cannot be undone.</p> : resolving ? <p>This debt is paid off. Resolving it permanently deletes the debt. Its recorded payments remain in Activity history. This cannot be undone.</p> : kind === 'paycheques' ? <p>This permanently removes this paycheque and its allocation history, including unfinished plans. Recorded goal savings, account balances and debt payments stay unchanged. This cannot be undone.</p> : <p>This permanently removes this {label}. Recorded payments and contributions remain in Activity history. This cannot be undone.</p>}
       <div className="actions">
         <button type="button" className="secondary" disabled={busy} onClick={() => setOpen(false)}>Cancel</button>
         <button type="button" disabled={busy} onClick={remove}>{busy ? 'Deleting…' : action}</button>

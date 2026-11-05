@@ -1,5 +1,7 @@
 import { apiFetch } from '../auth'
 import CsvUpload from '../components/CsvUpload'
+import Notice from '../components/Notice'
+import useNotice from '../hooks/useNotice'
 import StatementLibrary from '../components/StatementLibrary'
 import StatementDetail from '../components/StatementDetail'
 import { useEffect, useRef, useState } from 'react'
@@ -12,6 +14,7 @@ export default function BudgetWrapped() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useNotice()
   const request = useRef<AbortController | null>(null)
   const pageHeading = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
@@ -57,7 +60,11 @@ export default function BudgetWrapped() {
   }
   return <div className="wrapped-page">
     <h1 ref={pageHeading} tabIndex={-1}>Your Budget Wrapped</h1>
-    {statementId !== null ? <StatementDetail key={statementId} statementId={statementId} /> : <>
+    <Notice message={notice} />
+    {statementId !== null ? <StatementDetail key={statementId} statementId={statementId} onDelete={filename => {
+      setNotice(`Deleted ${filename} and its transactions.`)
+      window.location.hash = '/budget-wrapped'
+    }} /> : <>
       <p className="wrapped-intro">See where your money went. Open a statement or add a new one.</p>
       <div className="wrapped-library-layout">
       <StatementLibrary busy={loading} />

@@ -8,6 +8,11 @@ from app.services import statements
 
 router = APIRouter(prefix='/api/statements', tags=['statements'])
 
+
+@router.delete('/{statement_id}', status_code=204)
+def delete_statement(statement_id: int, session: Annotated[Session, Depends(get_session)]):
+    statements.delete_statement(statement_id=statement_id, session=session)
+
 @router.get('')
 def list_statements(session: Annotated[Session, Depends(get_session)],
                     offset: Annotated[int, Query(ge=0)] = 0,
