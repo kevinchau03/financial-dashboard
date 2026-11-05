@@ -1,5 +1,27 @@
 # MyBudgetPro backend
 
+## Debt types and payment details
+
+Debts support `credit_card`, `line_of_credit`, `personal_loan`, `auto_loan`,
+`student_loan`, `mortgage`, `buy_now_pay_later`, and `personal_debt`.
+Credit cards and lines of credit have optional `credit_limit` and
+`minimum_payment` fields. Other types have optional `payment_amount` and
+`payment_frequency` fields, supplied together. Frequency values are `weekly`,
+`biweekly`, `semimonthly`, `monthly`, `quarterly`, and `annually`.
+`due_date` is the manually maintained next payment date. No interest accrual,
+automatic payments or automatic schedule advancement is introduced.
+
+The existing `amount` is the tracked repayment total; `current_amount` is the
+amount already paid, so the remaining balance is their difference. Credit limits
+do not replace that total. Over-limit balances are allowed. Existing records
+default to personal debt without altering balances or payment history.
+
+Before deploying this version against PostgreSQL, run `uv run alembic upgrade head`
+from `backend` (new revision: `20261102_01`). SQLite startup adds the fields
+automatically. This code change does not migrate a live PostgreSQL database.
+
+## Backend overview
+
 FastAPI API with Supabase Auth, PostgreSQL persistence, and per-user financial
 records. See the [project README](../README.md#vercel-deployment) for Vercel
 hosting, environment variables, production routing, and troubleshooting. Complete

@@ -2,6 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
+from pydantic import ValidationError
 from app.database import get_session
 from app.services.payments import detach_payments
 from app.models import Debts
@@ -43,9 +44,19 @@ def create_debt(debt: DebtCreate, session: Annotated[Session, Depends(get_sessio
 
 @router.put("/api/debts/{debt_id}", response_model=DebtRead)
 def update_debt(debt_id: int, debt: DebtUpdate, session: Annotated[Session, Depends(get_session)]):
+    existing = get_or_404(session, Debts, debt_id)
+    values = debt.model_dump()
+    # Older clients omit metadata: retain it rather than silently changing the type.
+    for field in ('debt_type', 'credit_limit', 'minimum_payment', 'payment_amount', 'payment_frequency'):
+        if field not in debt.model_fields_set:
+            values[field] = getattr(existing, field)
+    try:
+        DebtCreate.model_validate({**values, 'current_amount': existing.current_amount})
+    except ValidationError as error:
+        raise HTTPException(422, '; '.join(item['msg'] for item in error.errors())) from None
     result = session.execute(update(Debts).where(
         Debts.id == debt_id, Debts.current_amount <= debt.amount,
-    ).values(**debt.model_dump()))
+    ).values(**values))
     if result.rowcount == 0:
         get_or_404(session, Debts, debt_id)
         raise HTTPException(422, "Total debt cannot be less than the amount already paid.")

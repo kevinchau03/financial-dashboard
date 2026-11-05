@@ -36,9 +36,17 @@ export type Bill = {
   payments: Payment[]
 }
 
+export type DebtKind = 'credit_card' | 'line_of_credit' | 'personal_loan' | 'auto_loan' | 'student_loan' | 'mortgage' | 'buy_now_pay_later' | 'personal_debt'
+export type DebtPaymentFrequency = 'weekly' | 'biweekly' | 'semimonthly' | 'monthly' | 'quarterly' | 'annually'
+
 export type Debt = {
   id: number
   name: string
+  debt_type: DebtKind
+  credit_limit: string | null
+  minimum_payment: string | null
+  payment_amount: string | null
+  payment_frequency: DebtPaymentFrequency | null
   amount: string
   current_amount: string
   remaining_amount: string

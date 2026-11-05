@@ -22,6 +22,17 @@ def initialize_database(engine, *, legacy_owner=None):
                 connection.execute(text(f'ALTER TABLE {name} ADD COLUMN user_id CHAR(32)'))
                 connection.execute(text(f'UPDATE {name} SET user_id = :owner WHERE user_id IS NULL'), {'owner': owner})
     Base.metadata.create_all(engine)
+    debt_columns = {column['name'] for column in inspect(engine).get_columns('debts')}
+    with engine.begin() as connection:
+        for name, definition in {
+            'debt_type': "VARCHAR(30) NOT NULL DEFAULT 'personal_debt'",
+            'credit_limit': 'NUMERIC(14, 2)',
+            'minimum_payment': 'NUMERIC(14, 2)',
+            'payment_amount': 'NUMERIC(14, 2)',
+            'payment_frequency': 'VARCHAR(20)',
+        }.items():
+            if name not in debt_columns:
+                connection.execute(text(f'ALTER TABLE debts ADD COLUMN {name} {definition}'))
     payment_columns = {column['name'] for column in inspect(engine).get_columns('payments')}
     with engine.begin() as connection:
         for name, definition in {

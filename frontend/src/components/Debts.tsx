@@ -11,6 +11,8 @@ import { amount, saveRecord, today } from '../api'
 import Modal from './Modal'
 import CollapsibleItem from './CollapsibleItem'
 import type { Debt as DebtType } from '../types'
+import type { DebtKind } from '../types'
+import { debtTypes, paymentFrequencies, isRevolvingDebt } from '../debtTypes'
 
   
 
@@ -19,6 +21,8 @@ function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
 }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [debtKind, setDebtKind] = useState<DebtKind>(debt?.debt_type ?? 'personal_debt')
+  const revolving = isRevolvingDebt(debtKind)
   const pending = useRef(false)
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -32,6 +36,11 @@ function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
     try {
       const saved = await saveRecord<DebtType>(debt ? `/api/debts/${debt.id}` : '/api/debts', debt ? 'PUT' : 'POST', {
         name: String(data.get('name')).trim(), amount: data.get('amount'),
+        debt_type: debtKind,
+        credit_limit: revolving ? data.get('credit_limit') || null : null,
+        minimum_payment: revolving ? data.get('minimum_payment') || null : null,
+        payment_amount: !revolving ? data.get('payment_amount') || null : null,
+        payment_frequency: !revolving ? data.get('payment_frequency') || null : null,
         due_date: data.get('due_date') || null,
         interest_rate: data.get('interest_rate') || null,
         description: String(data.get('description')).trim() || null,
@@ -43,12 +52,31 @@ function DebtForm({ debt, onSave, onCancel, onSavingChange }: {
       setError(error instanceof Error ? error.message : 'Unable to save debt.')
     } finally { pending.current = false; setSaving(false); onSavingChange?.(false) }
   }
-  return <AppForm onSubmit={submit} className={debt ? 'inline-form' : undefined} aria-label={debt ? `Edit ${debt.name}` : 'Add a debt'}>
+  return <AppForm onSubmit={submit} className={debt ? 'inline-form' : undefined} aria-label={debt ? `Edit ${debt.name}` : 'Add a debt'} onInput={event => {
+    const form = event.currentTarget
+    const payment = form.elements.namedItem('payment_amount') as HTMLInputElement | null
+    const frequency = form.elements.namedItem('payment_frequency') as HTMLSelectElement | null
+    payment?.setCustomValidity(Boolean(payment.value) !== Boolean(frequency?.value) ? 'Enter both a recurring payment amount and a payment frequency, or leave both blank.' : '')
+  }}>
     <fieldset disabled={saving}>
+      <label>Debt type<select name="debt_type" value={debtKind} onChange={event => setDebtKind(event.target.value as DebtKind)}>
+        {Object.entries(debtTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+      </select></label>
       <label>Debt name<input name="name" required maxLength={120} placeholder="Student loan" defaultValue={debt?.name} /></label>
-      <label>Total debt<input name="amount" type="number" min="0.01" max="999999999999.99" step="0.01" required defaultValue={debt?.amount} placeholder="5000.00" /></label>
+      <label>{revolving ? 'Tracked debt total' : 'Total repayment amount'}<input name="amount" type="number" min={debt ? Math.max(0.01, Number(debt.current_amount)) : '0.01'} max="999999999999.99" step="0.01" required defaultValue={debt?.amount} placeholder="5000.00" /><small>{revolving ? 'Enter the balance you are starting with, plus any opening amount already paid. This is not your credit limit.' : 'Enter the total amount you want to track repaying, including any opening amount already paid. Use your lender’s figures; interest is not calculated automatically.'} Remaining balance equals this total minus the amount already paid.</small></label>
       {!debt && <label>Already paid<input name="current_amount" type="number" min="0" max="999999999999.99" step="0.01" required defaultValue="0" /><small>Opening progress from before you started tracking. New payments will have their own history.</small></label>}
-      <label>Due date (optional)<input name="due_date" type="date" defaultValue={debt?.due_date ?? ''} /></label>
+      {revolving ? <div key="revolving" className="amount-fields">
+        <label>Credit limit (optional)<input name="credit_limit" type="number" min="0.01" max="999999999999.99" step="0.01" defaultValue={debt?.credit_limit ?? ''} /></label>
+        <label>Minimum payment (optional)<input name="minimum_payment" type="number" min="0" max="999999999999.99" step="0.01" defaultValue={debt?.minimum_payment ?? ''} /></label>
+      </div> : <div key="instalment" className="amount-fields">
+        <label>Recurring payment (optional)<input name="payment_amount" type="number" min="0.01" max="999999999999.99" step="0.01" defaultValue={debt?.payment_amount ?? ''} /></label>
+        <label>Payment frequency<select name="payment_frequency" defaultValue={debt?.payment_frequency ?? ''}>
+          <option value="">No recurring payment</option>
+          {Object.entries(paymentFrequencies).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+      </div>}
+      {!revolving && <small>For a recurring payment, enter both an amount and a frequency. Leave both blank for an informal or flexible arrangement.</small>}
+      <label>{revolving ? 'Payment due date (optional)' : 'Next payment date (optional)'}<input name="due_date" type="date" defaultValue={debt?.due_date ?? ''} /><small>Update this date and payment details manually from your lender’s statement. Payments do not advance this date automatically.</small></label>
       <label>Interest rate % (optional)<input name="interest_rate" type="number" min="0" max="100" step="0.01" defaultValue={debt?.interest_rate ?? ''} /><small>For reference only. Interest is not added automatically.</small></label>
       <label>Description (optional)<AutoTextarea name="description" maxLength={2000} rows={3} defaultValue={debt?.description ?? ''} /></label>
       <div className="actions"><button type="submit">{saving ? 'Saving…' : debt ? 'Save changes' : 'Add debt'}</button>{onCancel && <button className="secondary" type="button" onClick={onCancel}>Cancel</button>}</div>
@@ -82,11 +110,18 @@ function DebtCard({ debt, onSave, onDelete }: { debt: DebtType; onSave: (debt: D
   const lastPayment = debt.payments[0]
   return <CollapsibleItem title={debt.name}
     cardAction={paidOff ? <DeleteItem kind="debts" id={debt.id} name={debt.name} disabled={saving || editing} resolve onDelete={onDelete} /> : undefined}
-    summary={<><strong>{amount(debt.remaining_amount)}</strong> remaining of {amount(debt.amount)}</>}
+    summary={<><span>{debtTypes[debt.debt_type]}</span><br /><strong>{amount(debt.remaining_amount)}</strong> remaining of {amount(debt.amount)}</>}
     progress={Number(debt.current_amount)} target={Number(debt.amount)} progressLabel={`${debt.name} repayment progress`}>
     <p>{amount(debt.current_amount)} paid · <strong className="progress-percentage">{Math.round(Number(debt.current_amount) / Number(debt.amount) * 100)}% repaid</strong></p>
     {paidOff ? <p className="status paid">Paid off!</p> : debt.due_date && <p>Due <time dateTime={debt.due_date}>{debt.due_date}</time>{debt.due_date < today() && <span className="status overdue">Overdue</span>}</p>}
     {debt.interest_rate !== null && <p>Interest rate: {debt.interest_rate}% (reference only)</p>}
+    {isRevolvingDebt(debt.debt_type) && <>
+      <p>Credit limit: {debt.credit_limit ? amount(debt.credit_limit) : 'Not set'}</p>
+      {debt.credit_limit && <p>Recorded credit use: {(Number(debt.remaining_amount) / Number(debt.credit_limit) * 100).toFixed(1)}%{Number(debt.remaining_amount) > Number(debt.credit_limit) && ' (over limit)'}</p>}
+      <p>Minimum payment: {debt.minimum_payment !== null ? amount(debt.minimum_payment) : 'Not set'}</p>
+    </>}
+    {!isRevolvingDebt(debt.debt_type) && debt.payment_amount && debt.payment_frequency && <p>Recurring payment: {amount(debt.payment_amount)} · {paymentFrequencies[debt.payment_frequency]}</p>}
+    <p><small>Payment details are for reference. Interest, new charges, and future payments are not added automatically.</small></p>
     {debt.description && <p className="description">{debt.description}</p>}
     <p>{lastPayment ? `Last payment: ${amount(lastPayment.amount)} on ${lastPayment.paid_on}` : 'No payments recorded yet.'}</p>
     {debt.payments.length > 0 && <details><summary>Payment history ({debt.payments.length})</summary><ul className="payment-history">

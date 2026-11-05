@@ -143,6 +143,11 @@ class Debts(Owned, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
+    debt_type: Mapped[str] = mapped_column(String(30), default='personal_debt', server_default='personal_debt')
+    credit_limit: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    minimum_payment: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    payment_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    payment_frequency: Mapped[str | None] = mapped_column(String(20), nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     current_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
